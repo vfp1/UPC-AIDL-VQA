@@ -1,0 +1,9 @@
+README.md
+setup.py
+vqaHelpers/__init__.py
+vqaHelpers/vqaEval.py
+vqaHelpers/vqaIngestion.py
+vqaHelpers.egg-info/PKG-INFO
+vqaHelpers.egg-info/SOURCES.txt
+vqaHelpers.egg-info/dependency_links.txt
+vqaHelpers.egg-info/top_level.txt
