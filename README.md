@@ -14,7 +14,7 @@ the following instructions.
 This installs the helpers for _ingestion_ and _evaluation_ of the VQA Challenge. This is based on the
 [this repository](https://github.com/vfp1/VQA).
 ``` python
-python -m pip install installers/helpers/dist/vqaHelpers-0.3_unzip_capabilities-py3-none-any.whl
+python -m pip install installers/helpers/dist/vqaHelpers-0.4_faster_unzip_capabilities-py3-none-any.whl
 ```
 
 #### Preparing the datasets

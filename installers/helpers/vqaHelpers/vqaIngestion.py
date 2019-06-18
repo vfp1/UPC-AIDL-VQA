@@ -24,6 +24,7 @@ import copy
 import zipfile
 import os
 
+
 class VQADataset(object):
     """
     This class helps with unzipping the Images in the right locations. It is only used for unzipping the Images
@@ -43,17 +44,11 @@ class VQADataset(object):
 
             if file.endswith(".zip"):
 
+                print("Exctracting {}, please wait with a cup of coffe".format(file))
+
                 zip_ref = zipfile.ZipFile(os.path.join(imgDir, file), 'r')
 
-                uncompress_size = sum((_file.file_size for _file in zip_ref.infolist()))
-
-                extracted_size = 0
-
-                for _file in zip_ref.infolist():
-
-                    extracted_size += _file.file_size
-                    print("%s %%\r" % (extracted_size * 100/uncompress_size), flush=True)
-                    zip_ref.extract(_file, path=imgDir)
+                zip_ref.extractall(imgDir)
 
                 zip_ref.close()
 
