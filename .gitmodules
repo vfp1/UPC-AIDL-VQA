@@ -4,3 +4,6 @@
 [submodule "legacy/VQA"]
 	path = legacy/VQA
 	url = https://github.com/vfp1/VQA
+[submodule "legacy/vqamd_floyd"]
+	path = legacy/vqamd_floyd
+	url = https://github.com/vfp1/vqamd_floyd

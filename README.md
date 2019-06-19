@@ -10,6 +10,12 @@ This project derives from previous attempts on addressing VQA. Following there i
 This repository needs the installing of a package contain within it. Install it in your environment following
 the following instructions.
 
+### English model from Spacy
+
+```python
+python -m spacy download en
+```
+
 ### VQA helpers
 This installs the helpers for _ingestion_ and _evaluation_ of the VQA Challenge. This is based on the
 [this repository](https://github.com/vfp1/VQA).
@@ -30,3 +36,4 @@ path = r"G:\My Drive\Studies\UPC-AIDL\VQA\data"
 # Unzip the Images
 vqaIngestion.VQADataset().imageUnzip(path)
 ```
+
