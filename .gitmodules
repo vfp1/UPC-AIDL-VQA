@@ -1,0 +1,6 @@
+[submodule "legacy/vqa_keras"]
+	path = legacy/vqa_keras
+	url = https://github.com/vfp1/vqa_keras
+[submodule "legacy/VQA"]
+	path = legacy/VQA
+	url = https://github.com/vfp1/VQA

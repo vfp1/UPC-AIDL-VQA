@@ -6,7 +6,7 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 import os
 
-dataDir = '../../VQA' # Set the directory where all the VQA data are located
+dataDir = r'G:\My Drive\Studies\UPC-AIDL\VQA\data' # Set the directory where all the VQA data are located
 versionType = 'v2_'  # this should be '' when not using VQA v2.0 dataset
 # 'OpenEnded' only for v2.0. 'OpenEnded' or 'MultipleChoice' for v1.0
 taskType = 'OpenEnded'
