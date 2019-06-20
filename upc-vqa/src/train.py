@@ -20,7 +20,8 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.io
-from keras.models import Sequential
+from keras.models import Sequential, Model
+from keras.layers import concatenate
 from keras.layers.core import Dense, Dropout, Activation, Reshape
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
@@ -53,8 +54,8 @@ class VQA_train(object):
         training_questions_len = open(os.path.join(data_folder,"preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
         answers_train = open(os.path.join(data_folder,"preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
         images_train = open(os.path.join(data_folder,"preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
-        #img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
-        img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
+        img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
+        #img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
         vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
 
         # Load english dictionary
@@ -91,13 +92,14 @@ class VQA_train(object):
         lbl = LabelEncoder()
         lbl.fit(answers_train)
         nb_classes = len(list(lbl.classes_))
-        pk.dump(lbl, open(os.path.join(data_folder, '/output/label_encoder_lstm.sav'),'wb'))
+        print("Number of classes:", nb_classes)
+        pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
         # Setting Hyperparameters
 
         batch_size = 256
         img_dim = 4096
-        word2vec_dim = 300
+        word2vec_dim = 96
         #max_len = 30 # Required only when using Fixed-Length Padding
 
         num_hidden_nodes_mlp = 1024
@@ -114,9 +116,10 @@ class VQA_train(object):
             id_split = ids.split()
             id_map[id_split[0]] = int(id_split[1])
 
+        #-------------------------------------------------------------------------------------------------
         # Image model, a very simple MLP
         image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim=word2vec_dim + img_dim, kernel_initializer='uniform'))
+        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = word2vec_dim + img_dim, kernel_initializer='uniform'))
         image_model.add(Dropout(dropout))
 
         for i in range(num_layers_mlp):
@@ -125,12 +128,10 @@ class VQA_train(object):
             image_model.add(Dropout(dropout))
             image_model.add(Dense(nb_classes, kernel_initializer='uniform'))
         image_model.add(Activation('softmax'))
+
         print(image_model.summary())
 
-        # Compile image model
-        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-        image_model.compile(optimizer=sgd, loss='categorical_crossentropy')
-
+        #-------------------------------------------------------------------------------------------------
         # Language mode, LSTM party
         language_model = Sequential()
         language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
@@ -139,29 +140,35 @@ class VQA_train(object):
         for i in range(num_layers_lstm-2):
             language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
         language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
+
         print(language_model.summary())
 
-        language_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
-
+        #-------------------------------------------------------------------------------------------------
         # Merging both models
-        model = Sequential()
-        #model.add(Merge([language_model, image_model], mode='concat', concat_axis=1))
-        model.add(Concatenate([language_model,image_model]))
+        merged_output = concatenate([language_model.output, image_model.output])
 
         # Add fully connected layers
         for i in range(num_layers_mlp):
-            model.add(Dense(num_hidden_nodes_mlp, init='uniform'))
-            model.add(Activation('tanh'))
-            model.add(Dropout(0.5))
-        model.add(Dense(upper_lim))
-        model.add(Activation("softmax"))
 
-        print(model.summary())
+            if i == 0:
+                x = merged_output
 
-        model_dump = model.to_json()
-        open(os.path.join(data_folder, '/output/lstm_structure'  + '.json'), 'w').write(model_dump)
+            x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
+            x = Activation('tanh')(x)
+            x = Dropout(0.5)(x)
 
-        model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        x = Dense(upper_lim)(x)
+        x = (Activation("softmax"))(x)
+
+
+        #model_dump = model.to_json()
+        #open(os.path.join(data_folder, "output/lstm_structure'  + '.json'"), 'w').write(model_dump)
+
+        final_model = Model([language_model.input, image_model.input], x)
+
+        final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+        print(final_model.summary())
 
         global k
         for k in range(num_epochs):
@@ -184,12 +191,12 @@ class VQA_train(object):
 
                 Y_batch = get_answers_sum(ans_batch, lbl)
 
-                loss = model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
+                loss = final_model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
 
                 progbar.add(batch_size, values=[('train loss', loss)])
 
             if k%log_interval == 0:
 
-                model.save_weights(os.path.join(data_folder, "/output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
+                final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
 
-        model.save_weights(os.path.join(data_folder, "/output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
+        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))

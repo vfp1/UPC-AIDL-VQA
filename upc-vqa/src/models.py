@@ -158,7 +158,7 @@ class VQA_model(object):
         # model = Concatenate()([model_language, model_image])
         model = Sequential()
         # model.add(Merge([model_language, model_image], mode='concat', concat_axis=1))
-        model.add(Concatenate([model_language,model_image]))
+        model.add(Concatenate([model_language, model_image]))
 
         for _ in range(number_of_dense_layers):
             model.add(Dense(number_of_hidden_units, kernel_initializer='uniform'))
