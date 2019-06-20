@@ -119,7 +119,7 @@ class VQA_train(object):
         #-------------------------------------------------------------------------------------------------
         # Image model, a very simple MLP
         image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = word2vec_dim + img_dim, kernel_initializer='uniform'))
+        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = img_dim, kernel_initializer='uniform'))
         image_model.add(Dropout(dropout))
 
         for i in range(num_layers_mlp):
