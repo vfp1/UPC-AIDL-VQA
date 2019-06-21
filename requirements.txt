@@ -1,3 +1,5 @@
 wget==3.2
 spacy==2.1.4
-sklearn=0.0
+sklearn==0.0
+pandas==0.24.2
+progressbar==2.5
