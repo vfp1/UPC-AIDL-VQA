@@ -37,6 +37,16 @@ from utils import *
 
 from models import *
 
+import graphviz
+import pydot_ng as pydot
+pydot.find_graphviz()
+
+from keras.utils import plot_model
+from keras.callbacks import TensorBoard
+
+
+
+
 class VQA_train(object):
     """
 
@@ -109,7 +119,7 @@ class VQA_train(object):
         dropout = 0.5
         activation_mlp = 'tanh'
 
-        num_epochs = 90
+        num_epochs = 5
         log_interval = 15
 
         for ids in img_ids:
@@ -170,7 +180,10 @@ class VQA_train(object):
 
         print(final_model.summary())
 
-        global k
+        plot_model(final_model, to_file='./model.png')
+
+        #tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True, batch_size=bsize, write_images=True)
+
         for k in range(num_epochs):
 
             progbar = generic_utils.Progbar(len(training_questions))
@@ -191,9 +204,10 @@ class VQA_train(object):
 
                 Y_batch = get_answers_sum(ans_batch, lbl)
 
-                loss = final_model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
+                #loss = final_model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
+                loss = final_model.fit(x=[X_ques_batch, X_img_batch], y=Y_batch, batch_size=batch_size)
 
-                progbar.add(batch_size, values=[('train loss', loss)])
+                #progbar.add(batch_size, values=[('train loss', loss)])
 
             if k%log_interval == 0:
 
