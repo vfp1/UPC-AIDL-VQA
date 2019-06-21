@@ -170,33 +170,9 @@ class VQA_train(object):
 
         print(final_model.summary())
 
-        global k
-        for k in range(num_epochs):
 
-            progbar = generic_utils.Progbar(len(training_questions))
 
-            for ques_batch, ans_batch, im_batch in zip(grouped(training_questions, batch_size,
-                                                               fillvalue=training_questions[-1]),
-                                                       grouped(answers_train, batch_size,
-                                                               fillvalue=answers_train[-1]),
-                                                       grouped(images_train, batch_size, fillvalue=images_train[-1])):
+        final_model.fit([training_questions, answers_train], images_train, epochs=2, batch_size=256, verbose=2)
 
-                timestep = len(nlp(ques_batch[-1]))
+        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
 
-                X_ques_batch = get_questions_tensor_timeseries(ques_batch, nlp, timestep)
-
-                #print (X_ques_batch.shape)
-
-                X_img_batch = get_images_matrix(im_batch, id_map, img_features)
-
-                Y_batch = get_answers_sum(ans_batch, lbl)
-
-                loss = final_model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
-
-                progbar.add(batch_size, values=[('train loss', loss)])
-
-            if k%log_interval == 0:
-
-                final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
-
-        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
