@@ -181,14 +181,24 @@ class VQA_train(object):
 
         tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
 
+        print("Lenghts before subset:", len(training_questions), len(images_train), len(answers_train))
+
+        subset_training_questions = training_questions[0:100]
+        subset_images_train = training_questions[0:100]
+        subset_answers_train = training_questions[0:100]
+
+        print("Lenghts after subset:", len(subset_training_questions),
+              len(subset_images_train), len(subset_answers_train))
+
+
         print("Getting questions")
-        X_ques_batch = get_questions_matrix(training_questions, nlp)
+        X_ques_batch = get_questions_matrix(subset_training_questions, nlp)
 
         print("Getting images")
-        X_img_batch = get_images_matrix(images_train, id_map, img_features)
+        X_img_batch = get_images_matrix(subset_images_train, id_map, img_features)
 
         print("Get answers")
-        Y_batch = get_answers_sum(answers_train, lbl)
+        Y_batch = get_answers_sum(subset_answers_train, lbl)
 
         print("Questions, Images, Answers")
         print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
