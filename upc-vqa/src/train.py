@@ -37,6 +37,13 @@ from utils import *
 
 from models import *
 
+import graphviz
+import pydot_ng as pydot
+pydot.find_graphviz()
+
+from keras.utils import plot_model
+from keras.callbacks import TensorBoard
+
 class VQA_train(object):
     """
 
@@ -170,9 +177,19 @@ class VQA_train(object):
 
         print(final_model.summary())
 
+        plot_model(final_model, to_file='./model.png')
 
+        tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
 
-        final_model.fit([training_questions, answers_train], images_train, epochs=2, batch_size=256, verbose=2)
+        X_ques_batch = get_questions_tensor_timeseries(training_questions, nlp, batch_size)
+
+        X_img_batch = get_images_matrix(images_train, id_map, img_features)
+
+        Y_batch = get_answers_sum(answers_train, lbl)
+
+        print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
+
+        final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
 
         final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
 
