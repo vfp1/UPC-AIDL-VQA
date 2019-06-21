@@ -181,12 +181,16 @@ class VQA_train(object):
 
         tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
 
-        X_ques_batch = get_questions_tensor_timeseries(training_questions, nlp, batch_size)
+        print("Getting questions")
+        X_ques_batch = get_questions_matrix(training_questions, nlp)
 
+        print("Getting images")
         X_img_batch = get_images_matrix(images_train, id_map, img_features)
 
+        print("Get answers")
         Y_batch = get_answers_sum(answers_train, lbl)
 
+        print("Questions, Images, Answers")
         print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
 
         final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
