@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+__author__ = "Victor Pajuelo Madrigal"
+__copyright__ = "Copyright 2019, UPC Group"
+__credits__ = ["Victor Pajuelo Madrigal", "Jiasen Lu", "@abhshkdz"]
+__license__ = "GPL"
+__version__ = "0.1"
+__maintainer__ = "Victor Pajuelo Madrigal"
+__email__ = "-"
+__status__ = "Development"
+
 import sys, warnings
 warnings.filterwarnings("ignore")
 from random import shuffle, sample
@@ -35,7 +44,7 @@ pydot.find_graphviz()
 from keras.utils import plot_model
 from keras.callbacks import TensorBoard
 
-from sklearn.model_selection import train_test_split
+
 
 
 class VQA_train(object):
@@ -60,21 +69,19 @@ class VQA_train(object):
         vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
 
         # Load english dictionary
+        #nlp = spacy.load("en")
         try:
             nlp = spacy.load("en_core_web_md")
         except:
             nlp = spacy.load("en_core_web_sm")
         print ("Loaded WordVec")
-        
 
         # Load VGG weights
 
         vgg_features = scipy.io.loadmat(vgg_path)
         img_features = vgg_features['feats']
-
         id_map = dict()
-        print("Loaded VGG Weights")
-
+        print ("Loaded VGG Weights")
 
         # Number of most frequently occurring answers in COCOVQA (Covering >80% of the total data)
         upper_lim = 1000
@@ -87,42 +94,9 @@ class VQA_train(object):
                                                                                                           training_questions, answers_train,
                                                                                                           images_train))))
         # Sanity check
-        print("-----------------------------------------------------------------------")
-        print("Before subset:")
-        print("Lenght training questions:", len(training_questions))
+        print("A sanity check: Lenght training questions:", len(training_questions))
         print("Lenght answers", len(answers_train))
         print("Lenght number images", len(images_train))
-
-        # Creating subset
-        import random
-
-        subset_questions = []
-        subset_answers = []
-        subset_images = []
-
-        """
-        This below is the total sample size that will be created. It needs to be at least bigger than
-        1000 samples, since we have 1000 possible types of questions
-        """
-
-        sample_size = 10000
-
-        for index in sorted(random.sample(range(len(images_train)), sample_size)):
-            subset_questions.append(training_questions[index])
-            subset_answers.append(answers_train[index])
-            subset_images.append(images_train[index])
-
-
-        # Sanity check
-        print("-----------------------------------------------------------------------")
-        print("A sanity check: Lenght training questions:", len(subset_questions))
-        print("Lenght training answers:", len(subset_answers))
-        print("Lenght number images", len(subset_images))
-        print("-----------------------------------------------------------------------")
-        print("Sanity check")
-        random_id = random.sample(range(len(subset_images)), 1)
-        print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
-        print("-----------------------------------------------------------------------")
 
         # Encoding answers
         lbl = LabelEncoder()
@@ -131,8 +105,8 @@ class VQA_train(object):
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
-
         # Setting Hyperparameters
+
         batch_size = 256
         img_dim = 4096
         word2vec_dim = 96
@@ -155,7 +129,7 @@ class VQA_train(object):
         #-------------------------------------------------------------------------------------------------
         # Image model, a very simple MLP
         image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim=img_dim, kernel_initializer='uniform'))
+        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = img_dim, kernel_initializer='uniform'))
         image_model.add(Dropout(dropout))
 
         for i in range(num_layers_mlp):
@@ -206,14 +180,37 @@ class VQA_train(object):
 
         print(final_model.summary())
 
+        plot_model(final_model, to_file='./model.png')
 
-        try:
+        #tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True, batch_size=bsize, write_images=True)
 
-            plot_model(final_model, to_file='./model.png')
-      
-        except:
-          
-            pass
-     
+        for k in range(num_epochs):
 
- 
+            progbar = generic_utils.Progbar(len(training_questions))
+
+            for ques_batch, ans_batch, im_batch in zip(grouped(training_questions, batch_size,
+                                                               fillvalue=training_questions[-1]),
+                                                       grouped(answers_train, batch_size,
+                                                               fillvalue=answers_train[-1]),
+                                                       grouped(images_train, batch_size, fillvalue=images_train[-1])):
+
+                timestep = len(nlp(ques_batch[-1]))
+
+                X_ques_batch = get_questions_tensor_timeseries(ques_batch, nlp, timestep)
+
+                #print (X_ques_batch.shape)
+
+                X_img_batch = get_images_matrix(im_batch, id_map, img_features)
+
+                Y_batch = get_answers_sum(ans_batch, lbl)
+
+                #loss = final_model.train_on_batch([X_ques_batch, X_img_batch], Y_batch)
+                loss = final_model.fit(x=[X_ques_batch, X_img_batch], y=Y_batch, batch_size=batch_size)
+
+                #progbar.add(batch_size, values=[('train loss', loss)])
+
+            if k%log_interval == 0:
+
+                final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
+
+        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{:02d}.hdf5".format(k)))
