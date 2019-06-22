@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 
-__author__ = "Victor Pajuelo Madrigal"
-__copyright__ = "Copyright 2019, UPC Group"
-__credits__ = ["Victor Pajuelo Madrigal", "Jiasen Lu", "@abhshkdz"]
-__license__ = "GPL"
-__version__ = "0.1"
-__maintainer__ = "Victor Pajuelo Madrigal"
-__email__ = "-"
-__status__ = "Development"
-
 import operator
 from collections import defaultdict
 from itertools import zip_longest
