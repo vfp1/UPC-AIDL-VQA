@@ -8,7 +8,7 @@ from keras.layers import Concatenate
 
 # Modificaiton of file obtained from here
 # https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
-
+from keras import backend as K_back
 from keras.models import Sequential
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import MaxPooling2D, ZeroPadding2D
@@ -71,18 +71,28 @@ class VGG(object):
 
 
     def VGG_16(self, weights_path=None):
+        #
+        # Nota: "th" format means that the convolutional kernels will have the shape (depth, input_depth, rows, cols)
+        #       "tf" format means that the convolutional kernels will have the shape (rows, cols, input_depth, depth)
+        #
+        # si K_back.set_image_dim_ordering('th') habría que poner cambiar el reshape y el input_shape=(1, 28, 28) en la CONV2D
+        # David es el puto amo
+        # If we don't put this line, we need the to put X, Y, Z instead of Z, X, Y
+        K_back.set_image_dim_ordering('th')
+        #
+
         model = Sequential()
-        model.add(ZeroPadding2D((1, 1), input_shape=(3, 4096, 4096)))
+        model.add(ZeroPadding2D((1, 1), input_shape=(3, 224, 224)))
         model.add(Convolution2D(64, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(64, (3, 3), activation='relu', padding='valid'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(128, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(128, (3, 3), activation='relu', padding='valid'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(256, (3, 3), activation='relu', padding='valid'))
@@ -93,20 +103,20 @@ class VGG(object):
         model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
-        #model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
+        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
-        #model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        model.add(Convolution2D(512, (3, 3), activation='relu', padding='valid'))
+        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(Flatten())
         model.add(Dense(4096, activation='relu'))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import sys, warnings
 warnings.filterwarnings("ignore")
 from random import shuffle, sample
@@ -107,7 +108,7 @@ class VQA_train(object):
         1000 samples, since we have 1000 possible types of questions
         """
 
-        sample_size = 10000
+        sample_size = 4
 
         for index in sorted(random.sample(range(len(images_train)), sample_size)):
             subset_questions.append(training_questions[index])
@@ -218,7 +219,7 @@ class VQA_train(object):
                 try:
 
                     model_dump = final_model.to_json()
-                    with open(os.path.join(self.output_MLPLSTM_folder, "mlp_lstm_structure'  + '.json'"), 'w') as dump:
+                    with open(os.path.join(self.output_MLPLSTM_folder, 'mlp_lstm_structure.json'), 'w') as dump:
                         dump.write(model_dump)
 
                 except:
@@ -227,7 +228,19 @@ class VQA_train(object):
 
                 plot_model(final_model, to_file= os.path.join(self.output_MLPLSTM_folder, './model.png'))
 
-                tboard = TensorBoard(log_dir=self.output_MLPLSTM_folder, write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
+                epoch_string = 'EPOCH_{}-'.format(num_epochs)
+                batch_size = 'BSIZE_{}-'.format(batch_size)
+                subset_string = 'SUBSET_{}-'.format(sample_size)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_size + subset_string
+
+                path_file = os.path.join(self.output_MLPLSTM_folder, "{}".format(log_string))
+
+                tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True,
+                                     batch_size=batch_size, write_images=True)
 
             except:
 
@@ -319,7 +332,7 @@ class VQA_train(object):
                 try:
 
                     model_dump = final_model.to_json()
-                    with open (os.path.join(self.output_VGGLSTM_folder, "vgg_lstm_structure'  + '.json'"), 'w') as dump:
+                    with open (os.path.join(self.output_VGGLSTM_folder, 'vgg_lstm_structure.json'), 'w') as dump:
                         dump.write(model_dump)
 
                 except:
@@ -328,7 +341,18 @@ class VQA_train(object):
 
                 plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, './model.png'))
 
-                tboard = TensorBoard(log_dir=self.output_VGGLSTM_folder, write_graph=True, write_grads=True,
+                epoch_string = 'EPOCH_{}-'.format(num_epochs)
+                batch_size = 'BSIZE_{}-'.format(batch_size)
+                subset_string = 'SUBSET_{}-'.format(sample_size)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_size + subset_string
+
+                path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
+
+                tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True,
                                      batch_size=batch_size, write_images=True)
 
             except:
