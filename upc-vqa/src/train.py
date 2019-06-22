@@ -206,4 +206,3 @@ class VQA_train(object):
         final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
 
         final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
-
