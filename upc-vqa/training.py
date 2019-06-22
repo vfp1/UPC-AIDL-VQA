@@ -13,4 +13,4 @@ import train
 
 path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
 
-train.VQA_train().train(path)
+train.VQA_train().train(path, model_type=2)

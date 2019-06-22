@@ -73,31 +73,23 @@ class VGG(object):
     def VGG_16(self, weights_path=None):
         model = Sequential()
         model.add(ZeroPadding2D((1, 1), input_shape=(3, 4096, 4096)))
-        model.add(Convolution2D(64, (3, 3), activation='relu'))
+        model.add(Convolution2D(64, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(64, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        model.add(Convolution2D(64, (3, 3), activation='relu', padding='valid'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(128, (3, 3), activation='relu'))
+        model.add(Convolution2D(128, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(128, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        model.add(Convolution2D(128, (3, 3), activation='relu', padding='valid'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, (3, 3), activation='relu'))
+        model.add(Convolution2D(256, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, (3, 3), activation='relu'))
+        model.add(Convolution2D(256, (3, 3), activation='relu', padding='valid'))
         model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(256, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
-        model.add(ZeroPadding2D((1, 1)))
-        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(Convolution2D(256, (3, 3), activation='relu', padding='valid'))
         model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(ZeroPadding2D((1, 1)))
@@ -106,7 +98,15 @@ class VGG(object):
         model.add(Convolution2D(512, (3, 3), activation='relu'))
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(512, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        #model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+
+        model.add(ZeroPadding2D((1, 1)))
+        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(ZeroPadding2D((1, 1)))
+        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        model.add(ZeroPadding2D((1, 1)))
+        model.add(Convolution2D(512, (3, 3), activation='relu'))
+        #model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
         model.add(Flatten())
         model.add(Dense(4096, activation='relu'))
@@ -120,8 +120,8 @@ class VGG(object):
             self.load_model_legacy(model, weights_path)
 
         # Remove the last two layers to get the 4096D activations
-        model = self.pop(model)
-        model = self.pop(model)
+        #model = self.pop(model)
+        #model = self.pop(model)
 
         return model
 

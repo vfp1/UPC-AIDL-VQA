@@ -25,6 +25,7 @@ import spacy
 #from spacy.en import English
 from features import *
 from utils import *
+from vqa_data_prep import *
 
 from models import *
 
@@ -43,10 +44,11 @@ class VQA_train(object):
 
     """
 
-    def train(self, data_folder):
+    def train(self, data_folder, model_type=1):
         """
 
-        :param data_folder:
+        :param data_folder: the root data folder
+        :param model_type: 1, MLP, LSTM; 2, VGG, LSTM
         :return:
         """
 
@@ -145,105 +147,226 @@ class VQA_train(object):
         dropout = 0.5
         activation_mlp = 'tanh'
 
-        num_epochs = 90
-        log_interval = 15
+        num_epochs = 2
+        #log_interval = 15
 
         for ids in img_ids:
             id_split = ids.split()
             id_map[id_split[0]] = int(id_split[1])
 
-        #-------------------------------------------------------------------------------------------------
-        # Image model, a very simple MLP
-        image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim=img_dim, kernel_initializer='uniform'))
-        image_model.add(Dropout(dropout))
+        # -------------------------------------------------------------------------------------------------
+        # DECIDE MODEL TYPE: MPL_LSTM or VGG_LSTM
 
-        for i in range(num_layers_mlp):
-            image_model.add(Dense(num_hidden_nodes_mlp, kernel_initializer='uniform'))
-            image_model.add(Activation(activation_mlp))
+        if model_type == 1:
+            print("USING MLP LSTM model")
+
+            #-------------------------------------------------------------------------------------------------
+            # Image model, a very simple MLP
+            image_model = Sequential()
+            image_model.add(Dense(num_hidden_nodes_mlp, input_dim=img_dim, kernel_initializer='uniform'))
             image_model.add(Dropout(dropout))
-            image_model.add(Dense(nb_classes, kernel_initializer='uniform'))
-        image_model.add(Activation('softmax'))
 
-        print(image_model.summary())
+            for i in range(num_layers_mlp):
+                image_model.add(Dense(num_hidden_nodes_mlp, kernel_initializer='uniform'))
+                image_model.add(Activation(activation_mlp))
+                image_model.add(Dropout(dropout))
+                image_model.add(Dense(nb_classes, kernel_initializer='uniform'))
+            image_model.add(Activation('softmax'))
 
-        #-------------------------------------------------------------------------------------------------
-        # Language mode, LSTM party
-        language_model = Sequential()
-        language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
-                                return_sequences=True, input_shape=(None, word2vec_dim)))
+            print(image_model.summary())
 
-        for i in range(num_layers_lstm-2):
-            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
-        language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
+            #-------------------------------------------------------------------------------------------------
+            # Language mode, LSTM party
+            language_model = Sequential()
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
+                                    return_sequences=True, input_shape=(None, word2vec_dim)))
 
-        print(language_model.summary())
+            for i in range(num_layers_lstm-2):
+                language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
 
-        #-------------------------------------------------------------------------------------------------
-        # Merging both models
-        merged_output = concatenate([language_model.output, image_model.output])
+            print(language_model.summary())
 
-        # Add fully connected layers
-        for i in range(num_layers_mlp):
+            #-------------------------------------------------------------------------------------------------
+            # Merging both models
+            merged_output = concatenate([language_model.output, image_model.output])
 
-            if i == 0:
-                x = merged_output
+            # Add fully connected layers
+            for i in range(num_layers_mlp):
 
-            x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
-            x = Activation('tanh')(x)
-            x = Dropout(0.5)(x)
+                if i == 0:
+                    x = merged_output
 
-        x = Dense(upper_lim)(x)
-        x = (Activation("softmax"))(x)
+                x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
+                x = Activation('tanh')(x)
+                x = Dropout(0.5)(x)
+
+            x = Dense(upper_lim)(x)
+            x = (Activation("softmax"))(x)
+
+            final_model = Model([language_model.input, image_model.input], x)
+
+            final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+            print(final_model.summary())
+
+            try:
+
+                dir_tools = DirectoryTools()
+                self.output_MLPLSTM_folder = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/MLP_LSTM'))
+
+                try:
+
+                    model_dump = final_model.to_json()
+                    with open(os.path.join(self.output_MLPLSTM_folder, "mlp_lstm_structure'  + '.json'"), 'w') as dump:
+                        dump.write(model_dump)
+
+                except:
+
+                    pass
+
+                plot_model(final_model, to_file= os.path.join(self.output_MLPLSTM_folder, './model.png'))
+
+                tboard = TensorBoard(log_dir=self.output_MLPLSTM_folder, write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
+
+            except:
+
+                pass
+
+            # This is the timestep of the NLP
+            timestep = len(nlp(subset_questions[-1]))
+
+            print("Getting questions")
+            X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
+
+            print("Getting images")
+            X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
+
+            print("Get answers")
+            Y_batch_fit = get_answers_sum(subset_answers, lbl)
+
+            print("Questions, Images, Answers")
+            print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
 
 
-        #model_dump = model.to_json()
-        #open(os.path.join(data_folder, "output/lstm_structure'  + '.json'"), 'w').write(model_dump)
+            print("-----------------------------------------------------------------------")
+            print("TRAINING")
 
-        final_model = Model([language_model.input, image_model.input], x)
+            try:
 
-        final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2,
+                                callbacks=[tboard])
+                final_model.save_weights(os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
-        print(final_model.summary())
+            except:
 
-        try:
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2)
+                final_model.save_weights(os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
-            plot_model(final_model, to_file='./model.png')
+        elif model_type == 2:
 
-            tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
+            print("USING VGG LSTM model")
 
-        except:
+            # -------------------------------------------------------------------------------------------------
+            # Image model
+            image_model = Sequential()
+            image_model = VGG().VGG_16()
 
-            pass
+            print(image_model.summary())
 
-        # This is the timestep of the NLP
-        timestep = len(nlp(subset_questions[-1]))
+            # -------------------------------------------------------------------------------------------------
+            # Language mode, LSTM party
+            language_model = Sequential()
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
+                                    return_sequences=True, input_shape=(None, word2vec_dim)))
 
-        print("Getting questions")
-        X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
+            for i in range(num_layers_lstm - 2):
+                language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
 
-        print("Getting images")
-        X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
+            print(language_model.summary())
 
-        print("Get answers")
-        Y_batch_fit = get_answers_sum(subset_answers, lbl)
+            # -------------------------------------------------------------------------------------------------
+            # Merging both models
+            merged_output = concatenate([language_model.output, image_model.output])
 
-        print("Questions, Images, Answers")
-        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+            # Add fully connected layers
+            for i in range(num_layers_mlp):
+
+                if i == 0:
+                    x = merged_output
+
+                x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
+                x = Activation('tanh')(x)
+                x = Dropout(0.5)(x)
+
+            x = Dense(upper_lim)(x)
+            x = (Activation("softmax"))(x)
 
 
-        print("-----------------------------------------------------------------------")
-        print("TRAINING")
+            final_model = Model([language_model.input, image_model.input], x)
 
-        try:
+            final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2,
-                            callbacks=[tboard])
-            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+            print(final_model.summary())
 
-        except:
+            try:
 
-            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2)
-            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+                dir_tools = DirectoryTools()
+                self.output_VGGLSTM_folder = dir_tools.folder_creator(
+                    input_folder=os.path.join(data_folder, 'output/VGG_LSTM'))
+
+                try:
+
+                    model_dump = final_model.to_json()
+                    with open (os.path.join(self.output_VGGLSTM_folder, "vgg_lstm_structure'  + '.json'"), 'w') as dump:
+                        dump.write(model_dump)
+
+                except:
+
+                    pass
+
+                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, './model.png'))
+
+                tboard = TensorBoard(log_dir=self.output_VGGLSTM_folder, write_graph=True, write_grads=True,
+                                     batch_size=batch_size, write_images=True)
+
+            except:
+
+                pass
+
+            # This is the timestep of the NLP
+            timestep = len(nlp(subset_questions[-1]))
+
+            print("Getting questions")
+            X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
+
+            print("Getting images")
+            X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
+
+            print("Get answers")
+            Y_batch_fit = get_answers_sum(subset_answers, lbl)
+
+            print("Questions, Images, Answers")
+            print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+
+            print("-----------------------------------------------------------------------")
+            print("TRAINING")
+
+            try:
+
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs,
+                                batch_size=batch_size, verbose=2,
+                                callbacks=[tboard])
+                final_model.save_weights(
+                    os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+
+            except:
+
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs,
+                                batch_size=batch_size, verbose=2)
+                final_model.save_weights(
+                    os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+
 
 
