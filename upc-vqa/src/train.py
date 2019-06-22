@@ -145,7 +145,7 @@ class VQA_train(object):
         dropout = 0.5
         activation_mlp = 'tanh'
 
-        num_epochs = 90
+        num_epochs = 5
         log_interval = 15
 
         for ids in img_ids:
@@ -206,44 +206,14 @@ class VQA_train(object):
 
         print(final_model.summary())
 
+
         try:
 
             plot_model(final_model, to_file='./model.png')
-
-            tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
-
+      
         except:
-
+          
             pass
+     
 
-        # This is the timestep of the NLP
-        timestep = len(nlp(subset_questions[-1]))
-
-        print("Getting questions")
-        X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
-
-        print("Getting images")
-        X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
-
-        print("Get answers")
-        Y_batch_fit = get_answers_sum(subset_answers, lbl)
-
-        print("Questions, Images, Answers")
-        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
-
-
-        print("-----------------------------------------------------------------------")
-        print("TRAINING")
-
-        try:
-
-            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2,
-                            callbacks=[tboard])
-            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
-
-        except:
-
-            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2)
-            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
-
-
+ 
