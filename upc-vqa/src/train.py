@@ -100,7 +100,12 @@ class VQA_train(object):
         subset_answers = []
         subset_images = []
 
-        sample_size = 4
+        """
+        This below is the total sample size that will be created. It needs to be at least bigger than
+        1000 samples, since we have 1000 possible types of questions
+        """
+
+        sample_size = 10000
 
         for index in sorted(random.sample(range(len(images_train)), sample_size)):
             subset_questions.append(training_questions[index])
@@ -211,25 +216,34 @@ class VQA_train(object):
 
             pass
 
+        # This is the timestep of the NLP
+        timestep = len(nlp(subset_questions[-1]))
 
         print("Getting questions")
-        X_ques_batch = get_questions_sum(subset_questions, nlp)
+        X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
         print("Getting images")
-        X_img_batch = get_images_matrix(subset_images, id_map, img_features)
+        X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
 
         print("Get answers")
-        Y_batch = get_answers_sum(subset_answers, lbl)
+        Y_batch_fit = get_answers_sum(subset_answers, lbl)
 
         print("Questions, Images, Answers")
-        print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
-        
+        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+
+
         print("-----------------------------------------------------------------------")
         print("TRAINING")
 
         try:
-            final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
-        except:
-            final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2)
 
-        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
+            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2,
+                            callbacks=[tboard])
+            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+
+        except:
+
+            final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2)
+            final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+
+
