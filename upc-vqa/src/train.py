@@ -44,6 +44,9 @@ pydot.find_graphviz()
 from keras.utils import plot_model
 from keras.callbacks import TensorBoard
 
+from sklearn.model_selection import train_test_split
+
+
 class VQA_train(object):
     """
 
@@ -66,19 +69,21 @@ class VQA_train(object):
         vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
 
         # Load english dictionary
-        #nlp = spacy.load("en")
         try:
             nlp = spacy.load("en_core_web_md")
         except:
             nlp = spacy.load("en_core_web_sm")
         print ("Loaded WordVec")
+        
 
         # Load VGG weights
 
         vgg_features = scipy.io.loadmat(vgg_path)
         img_features = vgg_features['feats']
+
         id_map = dict()
-        print ("Loaded VGG Weights")
+        print("Loaded VGG Weights")
+
 
         # Number of most frequently occurring answers in COCOVQA (Covering >80% of the total data)
         upper_lim = 1000
@@ -91,9 +96,37 @@ class VQA_train(object):
                                                                                                           training_questions, answers_train,
                                                                                                           images_train))))
         # Sanity check
-        print("A sanity check: Lenght training questions:", len(training_questions))
+        print("-----------------------------------------------------------------------")
+        print("Before subset:")
+        print("Lenght training questions:", len(training_questions))
         print("Lenght answers", len(answers_train))
         print("Lenght number images", len(images_train))
+
+        # Creating subset
+        import random
+
+        subset_questions = []
+        subset_answers = []
+        subset_images = []
+
+        sample_size = 4
+
+        for index in sorted(random.sample(range(len(images_train)), sample_size)):
+            subset_questions.append(training_questions[index])
+            subset_answers.append(answers_train[index])
+            subset_images.append(images_train[index])
+
+
+        # Sanity check
+        print("-----------------------------------------------------------------------")
+        print("A sanity check: Lenght training questions:", len(subset_questions))
+        print("Lenght training answers:", len(subset_answers))
+        print("Lenght number images", len(subset_images))
+        print("-----------------------------------------------------------------------")
+        print("Sanity check")
+        random_id = random.sample(range(len(subset_images)), 1)
+        print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+        print("-----------------------------------------------------------------------")
 
         # Encoding answers
         lbl = LabelEncoder()
@@ -102,8 +135,8 @@ class VQA_train(object):
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
-        # Setting Hyperparameters
 
+        # Setting Hyperparameters
         batch_size = 256
         img_dim = 4096
         word2vec_dim = 96
@@ -126,7 +159,7 @@ class VQA_train(object):
         #-------------------------------------------------------------------------------------------------
         # Image model, a very simple MLP
         image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = img_dim, kernel_initializer='uniform'))
+        image_model.add(Dense(num_hidden_nodes_mlp, input_dim=img_dim, kernel_initializer='uniform'))
         image_model.add(Dropout(dropout))
 
         for i in range(num_layers_mlp):
@@ -177,33 +210,35 @@ class VQA_train(object):
 
         print(final_model.summary())
 
-        plot_model(final_model, to_file='./model.png')
+        try:
 
-        tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
+            plot_model(final_model, to_file='./model.png')
 
-        print("Lenghts before subset:", len(training_questions), len(images_train), len(answers_train))
+            tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
 
-        subset_training_questions = training_questions[0:100]
-        subset_images_train = training_questions[0:100]
-        subset_answers_train = training_questions[0:100]
+        except:
 
-        print("Lenghts after subset:", len(subset_training_questions),
-              len(subset_images_train), len(subset_answers_train))
+            pass
 
 
         print("Getting questions")
-        X_ques_batch = get_questions_matrix(subset_training_questions, nlp)
+        X_ques_batch = get_questions_sum(subset_questions, nlp)
 
         print("Getting images")
-        X_img_batch = get_images_matrix(subset_images_train, id_map, img_features)
+        X_img_batch = get_images_matrix(subset_images, id_map, img_features)
 
         print("Get answers")
-        Y_batch = get_answers_sum(subset_answers_train, lbl)
+        Y_batch = get_answers_sum(subset_answers, lbl)
 
         print("Questions, Images, Answers")
         print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
+        
+        print("-----------------------------------------------------------------------")
+        print("TRAINING")
 
-        final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
+        try:
+            final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
+        except:
+            final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2)
 
         final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
-
