@@ -54,16 +54,43 @@ import skimage.io as io
 
 class VQA_train(object):
     """
-
+    The training of VQA
     """
 
-    def train(self, data_folder, model_type=1):
+    def define_Batch_Generator(self):
         """
+        Define a Batch Generator to train on big datasets
+        :return:
+        """
+
+
+
+    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, bsize=256):
+        """
+        Defines the training
 
         :param data_folder: the root data folder
         :param model_type: 1, MLP, LSTM; 2, VGG, LSTM
+        :param num_epochs: the number of epochs
+        :param subset_size: the subset size of VQA dataset, recommended 10,000 at least
+        :param bsize: the batch size, default at 256
         :return:
         """
+        # Setting Hyperparameters
+        batch_size = bsize
+        img_dim = 4096
+        word2vec_dim = 96
+        #max_len = 30 # Required only when using Fixed-Length Padding
+
+        num_hidden_nodes_mlp = 1024
+        num_hidden_nodes_lstm = 512
+        num_layers_mlp = 3
+        num_layers_lstm = 3
+        dropout = 0.5
+        activation_mlp = 'tanh'
+
+        num_epochs = num_epochs
+        #log_interval = 15
 
         # Point to preprocessed data
         training_questions = open(os.path.join(data_folder, "preprocessed/ques_val.txt"),"rb").read().decode('utf8').splitlines()
@@ -79,7 +106,7 @@ class VQA_train(object):
             nlp = spacy.load("en_core_web_md")
         except:
             nlp = spacy.load("en_core_web_sm")
-        print ("Loaded WordVec")
+        print("Loaded WordVec")
         
 
         # Load VGG weights
@@ -120,7 +147,7 @@ class VQA_train(object):
         1000 samples, since we have 1000 possible types of questions
         """
 
-        sample_size = 4
+        sample_size = subset_size
 
         for index in sorted(random.sample(range(len(images_train)), sample_size)):
             subset_questions.append(training_questions[index])
@@ -145,23 +172,6 @@ class VQA_train(object):
         nb_classes = len(list(lbl.classes_))
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
-
-
-        # Setting Hyperparameters
-        batch_size = 256
-        img_dim = 4096
-        word2vec_dim = 96
-        #max_len = 30 # Required only when using Fixed-Length Padding
-
-        num_hidden_nodes_mlp = 1024
-        num_hidden_nodes_lstm = 512
-        num_layers_mlp = 3
-        num_layers_lstm = 3
-        dropout = 0.5
-        activation_mlp = 'tanh'
-
-        num_epochs = 2
-        #log_interval = 15
 
         """
         This was used to map COCO, we have a subset of it
@@ -262,6 +272,14 @@ class VQA_train(object):
 
                 pass
 
+            img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
+
+            id_map = dict()
+
+            for ids in img_ids:
+                id_split = ids.split()
+                id_map[id_split[0]] = int(id_split[1])
+
             # This is the timestep of the NLP
             timestep = len(nlp(subset_questions[-1]))
 
@@ -298,6 +316,9 @@ class VQA_train(object):
 
             # -------------------------------------------------------------------------------------------------
             # Image model
+            """
+            This is the VGG model 
+            """
             image_model = Sequential()
             #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
             try:
@@ -393,7 +414,6 @@ class VQA_train(object):
 
             print("Getting images")
             X_img_batch_fit = get_images_matrix_VGG(subset_images, data_folder)
-            #X_img_batch_fit_reshape = np.reshape(X_img_batch_fit, (-1, sample_size, img_dim, img_dim))
 
             print("Get answers")
             Y_batch_fit = get_answers_sum(subset_answers, lbl)

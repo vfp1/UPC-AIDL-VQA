@@ -10,6 +10,8 @@ import skimage.io as io
 import os
 from skimage.transform import resize
 
+from tqdm import tqdm
+
 """Gets the 4096-dimensional CNN features for the given COCO
 	VGGfeatures: 	A numpy array of shape (nb_dimensions,nb_images)
 	Ouput:
@@ -40,8 +42,9 @@ def get_images_matrix_VGG(img_coco_ids, data_path):
 
     image_matrix = []
 
-    for j in range(len(img_coco_ids)):
-        imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_ids[j]).zfill(12) + '.jpg'
+
+    for index, image_id in tqdm(zip(range(len(img_coco_ids)), img_coco_ids), total=len(img_coco_ids)):
+        imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_ids[index]).zfill(12) + '.jpg'
 
         I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
