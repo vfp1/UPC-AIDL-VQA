@@ -17,6 +17,22 @@ except:
 
 # Preprocess data
 
-path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
+try:
 
-train.VQA_train().train(path, model_type=2, num_epochs=2, subset_size=10000, bsize=20, steps_per_epoch=20)
+    path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
+
+    train.VQA_train().train(path, model_type=2, num_epochs=2,
+                            subset_size=10, bsize=2, steps_per_epoch=1,
+                            keras_loss='categorical_crossentropy',
+                            keras_metrics='categorical_accuracy', learning_rate=1e-3,
+                            optimizer='rmsprop', fine_tuned=True)
+
+except:
+
+    path = "/aidl/VQA/data/"
+
+    train.VQA_train().train(path, model_type=2, num_epochs=200,
+                            subset_size=30000, bsize=50, steps_per_epoch=20,
+                            keras_loss='categorical_crossentropy',
+                            keras_metrics='categorical_accuracy', learning_rate=1e-3,
+                            optimizer='rmsprop', fine_tuned=True)

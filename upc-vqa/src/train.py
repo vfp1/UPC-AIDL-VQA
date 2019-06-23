@@ -17,7 +17,7 @@ from keras.layers import concatenate
 from keras.layers.core import Dense, Dropout, Activation, Reshape
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
-from keras.optimizers import SGD
+from keras.optimizers import RMSprop
 from keras.utils import np_utils, generic_utils
 from progressbar import Bar, ETA, Percentage, ProgressBar
 from keras.models import model_from_json
@@ -126,7 +126,9 @@ class VQA_train(object):
     The training of VQA
     """
 
-    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, bsize=256, steps_per_epoch=20):
+    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10,
+              bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
+              keras_metrics='categorical_accuracy', learning_rate=0.01, optimizer='rmsprop', fine_tuned=True):
         """
         Defines the training
 
@@ -160,7 +162,7 @@ class VQA_train(object):
         images_train = open(os.path.join(data_folder, "preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
-        vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
+        vgg_path = os.path.join(data_folder, "vgg_weights/vgg16_weights.h5")
 
         # Load english dictionary
         try:
@@ -170,10 +172,12 @@ class VQA_train(object):
         print("Loaded WordVec")
         
 
-        # Load VGG weights
-
-        vgg_features = scipy.io.loadmat(vgg_path)
-        img_features = vgg_features['feats']
+        # Load VGG weights (only for MLP, for VGG are loaded later)
+        try:
+            vgg_features = scipy.io.loadmat(vgg_path)
+            img_features = vgg_features['feats']
+        except:
+            pass
 
         #id_map = dict()
         print("Loaded VGG Weights")
@@ -382,11 +386,14 @@ class VQA_train(object):
             """
             image_model = Sequential()
             #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
-            try:
-                image_model = VGG().VGG_16(weights_path=vgg_path)
-            except:
+
+            if fine_tuned is False:
                 image_model = VGG().VGG_16()
-                #image_model.add(Reshape((img_dim,), input_shape=(img_dim,)))
+                VGG_weights = "FALSE"
+
+            elif fine_tuned is True:
+                image_model = VGG().VGG_16_pretrained()
+                VGG_weights = "TRUE"
 
             print(image_model.summary())
 
@@ -422,7 +429,15 @@ class VQA_train(object):
 
             final_model = Model([language_model.input, image_model.input], x)
 
-            final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+            if optimizer == 'rmsprop':
+
+                opt = RMSprop(lr=learning_rate)
+
+            else:
+
+                raise ValueError("Optimizer not loaded")
+
+            final_model.compile(loss=keras_loss, optimizer=opt, metrics=[keras_metrics])
 
             print(final_model.summary())
 
@@ -446,14 +461,20 @@ class VQA_train(object):
 
                 plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, 'VGG_LSTM.png'))
 
-                epoch_string = 'EPOCH_{}-'.format(num_epochs)
-                batch_string = 'BSIZE_{}-'.format(batch_size)
-                subset_string = 'SUBSET_{}-'.format(sample_size)
+                epoch_string = 'EPOCH_{}--'.format(num_epochs)
+                batch_string = 'BSIZE_{}--'.format(batch_size)
+                subset_string = 'SUBSET_{}--'.format(sample_size)
+                loss_string = 'LOSS_{}--'.format(keras_loss)
+                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
+                metrics_string = 'MET_{}--'.format(keras_metrics)
+                optimizer_string = 'OPT_{}--'.format(optimizer)
+                learning_rate_string = 'LR_{}__'.format(learning_rate)
 
                 # Start the time string
                 time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
 
-                log_string = time_string + epoch_string + batch_string + subset_string
+                log_string = time_string + epoch_string + batch_string + subset_string + \
+                             loss_string + VGG_string + metrics_string + optimizer_string + learning_rate_string
 
                 path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
 
@@ -461,6 +482,21 @@ class VQA_train(object):
                                      batch_size=batch_size, write_images=True)
 
             except:
+
+                epoch_string = 'EPOCH_{}--'.format(num_epochs)
+                batch_string = 'BSIZE_{}--'.format(batch_size)
+                subset_string = 'SUBSET_{}--'.format(sample_size)
+                loss_string = 'LOSS_{}--'.format(keras_loss)
+                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
+                metrics_string = 'MET_{}--'.format(keras_metrics)
+                optimizer_string = 'OPT_{}--'.format(optimizer)
+                learning_rate_string = 'LR_{}__'.format(learning_rate)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_string + subset_string + \
+                             loss_string + VGG_string + metrics_string + optimizer_string + learning_rate_string
 
                 pass
 
@@ -494,8 +530,8 @@ class VQA_train(object):
                                           verbose=2,
                                           callbacks=[tboard])
 
-                final_model.save_weights(
-                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
 
             except:
 
@@ -505,5 +541,5 @@ class VQA_train(object):
                                           verbose=2)
 
                 final_model.save_weights(
-                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
 
