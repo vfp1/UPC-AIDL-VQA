@@ -43,7 +43,7 @@ import graphviz
 import pydot_ng as pydot
 pydot.find_graphviz()
 
-from keras.utils import plot_model
+from keras.utils import plot_model, Sequence
 from keras.callbacks import TensorBoard
 
 from sklearn.model_selection import train_test_split
@@ -51,19 +51,80 @@ from sklearn.model_selection import train_test_split
 from vqaHelpers import VQA
 import skimage.io as io
 
+class Custom_Batch_Generator(Sequence):
+    # Here we inherit the Sequence class from keras.utils
+    """
+    A custom Batch Generator to load the dataset from the HDD in
+    batches to memory
+    """
+
+    def __init__(self, questions, images, answers, batch_size, lstm_timestep, data_folder, nlp_load, lbl_load):
+        """
+        Here, we can feed parameters to our generator.
+        :param questions: the preprocessed questions
+        :param images: the preprocessed images
+        :param answers: the preprocessed answers
+        :param batch_size: the batch size
+        :param lstm_timestep: the timestep of the LSTM timestep = len(nlp(subset_questions[-1]))
+        :param data_folder: the data root folder (/aidl/VQA/data/, in Google Cloud
+        :param nlp_load: the nlp processing to be loaded from VQA_train
+        :param lbl_load: the lbl processing to be loaded from VQA_train
+        :param val_coco_id_file: the file for the coco id
+        """
+        self.questions = questions
+        self.images = images
+        self.answers = answers
+        self.batch_size = batch_size
+        self.lstm_timestep = lstm_timestep
+        self.data_folder = data_folder
+        self.nlp_load = nlp_load
+        self.lbl_load = lbl_load
+
+    def __len__(self):
+        """
+        This function computes the number of batches that this generator is supposed to produce.
+        So, we divide the number of total samples by the batch_size and return that value.
+        :return:
+        """
+        return (np.ceil(len(self.images) / float(self.batch_size))).astype(np.int)
+
+    def __getitem__(self, idx):
+
+        """
+        Here, given the batch number idx you need to put together a list
+        that consists of data batch and the ground-truth (GT).
+
+        In our case, this is a tuple of [questions, images] and [answers]
+
+        In __getitem__(self, idx) function you can decide what happens to your dataset when loaded in batches.
+        Here, you can put your preprocessing steps as well.
+
+        :param idx: the batch id
+        :return:
+        """
+        batch_x_questions = self.questions[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_x_images = self.images[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_y_answers = self.answers[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        print("Getting questions batch")
+        X_ques_batch_fit = get_questions_tensor_timeseries(batch_x_questions, self.nlp_load, self.lstm_timestep)
+
+        print("Getting images batch")
+        X_img_batch_fit = get_images_matrix_VGG(self.images, batch_x_images, self.data_folder)
+
+        print("Get answers batch ")
+        Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
+
+        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+
+        return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
 
 class VQA_train(object):
     """
     The training of VQA
     """
-
-    def define_Batch_Generator(self):
-        """
-        Define a Batch Generator to train on big datasets
-        :return:
-        """
-
-
 
     def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, bsize=256):
         """
@@ -78,7 +139,7 @@ class VQA_train(object):
         """
         # Setting Hyperparameters
         batch_size = bsize
-        img_dim = 4096
+        img_dim = 4096 # the image dimensions for the MLP and the output of the FCN
         word2vec_dim = 96
         #max_len = 30 # Required only when using Fixed-Length Padding
 
@@ -406,35 +467,37 @@ class VQA_train(object):
             #-----------------------------------------------------------------------
             # Preparing train
 
-            # This is the timestep of the NLP
+            print("-----------------------------------------------------------------------")
+            print("GENERATING THE BATCH GENERATOR")
+
             timestep = len(nlp(subset_questions[-1]))
 
-            print("Getting questions")
-            X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
-
-            print("Getting images")
-            X_img_batch_fit = get_images_matrix_VGG(subset_images, data_folder)
-
-            print("Get answers")
-            Y_batch_fit = get_answers_sum(subset_answers, lbl)
-
-            print("Questions, Images, Answers")
-            print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+            training_batch_generator = Custom_Batch_Generator(questions=subset_questions, images=subset_images,
+                                                              answers=subset_answers, batch_size=batch_size,
+                                                              lstm_timestep=timestep, data_folder=data_folder,
+                                                              nlp_load=nlp, lbl_load=lbl)
 
             print("-----------------------------------------------------------------------")
             print("TRAINING")
 
+            # Deploying in Google Cloud (Linux VM)
             try:
+                final_model.fit_generator(generator=training_batch_generator,
+                                          steps_per_epoch=int(sample_size // batch_size),
+                                          epochs=num_epochs,
+                                          verbose=2,
+                                          callbacks=[tboard])
 
-                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs,
-                                batch_size=batch_size, verbose=2,
-                                callbacks=[tboard])
                 final_model.save_weights(
                     os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
             except:
 
-                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs,
-                                batch_size=batch_size, verbose=2)
+                final_model.fit_generator(generator=training_batch_generator,
+                                          steps_per_epoch=1,
+                                          epochs=num_epochs,
+                                          verbose=2)
+
                 final_model.save_weights(
                     os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+

@@ -45,7 +45,7 @@ def get_questions_sum(questions, nlp):
     return ques_matrix
 
 def get_answers_sum(answers, encoder):
-    assert not isinstance(answers, str)
+    #assert not isinstance(answers, str)
     y = encoder.transform(answers)
     nb_classes = encoder.classes_.shape[0]
     Y = np_utils.to_categorical(y, nb_classes)
@@ -61,7 +61,6 @@ def get_images_matrix(img_id, img_map, vgg_features):
 
     return image_matrix
 
-
 def most_freq_answer(values):
     ans_dict = {}
     for index in range(10):
@@ -70,14 +69,3 @@ def most_freq_answer(values):
         ans_dict[values[index]['answer']] += 1
 
     return max(ans_dict.items(), key = operator.itemgetter(1))[0]
-
-""""
-
-def tensorboard_ngrok(path_to_log):
-
-    LOG_DIR = '/content/UPC-AIDL-bAbI-VQA/auto_dl/experiments/tb_logs'
-    tensorboard_call = 'tensorboard --logdir {} --host 0.0.0.0 --port 6006 &'.format(path_to_log)
-    call_ngrok = './ngrok http 6006 &'
-
-    call_curl = 'curl - s http://localhost:4040/api/ tunnels | python3 - c "import sys, json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"'
-"""

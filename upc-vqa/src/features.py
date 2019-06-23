@@ -34,24 +34,22 @@ def get_images_matrix(img_coco_ids, img_map, VGGfeatures):
 	Ouput:
 	A numpy matrix of size (nb_samples, nb_dimensions)"""
 
-def get_images_matrix_VGG(img_coco_ids, data_path):
+def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path):
 
-    assert not isinstance(img_coco_ids, str)
-
-    nb_samples = len(img_coco_ids)
+    #assert not isinstance(img_coco_ids, str)
 
     image_matrix = []
 
 
-    for index, image_id in tqdm(zip(range(len(img_coco_ids)), img_coco_ids), total=len(img_coco_ids)):
-        imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_ids[index]).zfill(12) + '.jpg'
+    for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+
+        imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
 
         I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
         # Resize images to fit in VGG matrix
         # TODO: not optimal, find ways to pass whole image (padding)
         image_resized = resize(I, (224, 224), anti_aliasing=True)
-
 
         image_matrix.append(image_resized)
 
@@ -81,7 +79,7 @@ def get_questions_matrix(questions, nlp):
 	A numpy array of shape (nb_samples, nb_classes)"""
 
 def get_answers_matrix(answers, encoder):
-    assert not isinstance(answers, str)
+    #assert not isinstance(answers, str)
     y = encoder.transform(answers) #string to numerical class
     nb_classes = encoder.classes_.shape[0]
     Y = np_utils.to_categorical(y, nb_classes)
@@ -91,10 +89,13 @@ def get_answers_matrix(answers, encoder):
 	A numpy ndarray of shape: (nb_samples, timesteps, word_vec_dim)"""
 
 def get_questions_tensor_timeseries(questions, nlp, timesteps):
-    assert not isinstance(questions, str)
+    #assert not isinstance(questions, str)
     nb_samples = len(questions)
+
     word_vec_dim = nlp(questions[0])[0].vector.shape[0]
+
     questions_tensor = np.zeros((nb_samples, timesteps, word_vec_dim))
+
     for i in range(len(questions)):
         tokens = nlp(questions[i])
         for j in range(len(tokens)):
