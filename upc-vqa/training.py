@@ -19,4 +19,4 @@ except:
 
 path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
 
-train.VQA_train().train(path, model_type=2, num_epochs=2, subset_size=1000, bsize=10)
+train.VQA_train().train(path, model_type=2, num_epochs=2, subset_size=10000, bsize=20, steps_per_epoch=20)

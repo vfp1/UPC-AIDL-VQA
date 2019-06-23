@@ -55,7 +55,7 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path):
 
     # Resizing the shape to have the channels first as keras demands
     image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-    print("Shape of COCO images", image_array.shape)
+    #print("Shape of COCO images", image_array.shape)
     return image_array
 
 """Sums the word vectors of all the tokens in a question
@@ -85,17 +85,21 @@ def get_answers_matrix(answers, encoder):
     Y = np_utils.to_categorical(y, nb_classes)
     return Y
 
+def get_answers_sum(answers, encoder):
+    #assert not isinstance(answers, str)
+    y = encoder.transform(answers)
+    nb_classes = encoder.classes_.shape[0]
+    Y = np_utils.to_categorical(y, nb_classes)
+    return Y
+
 """Returns a time series of word vectors for tokens in the question
 	A numpy ndarray of shape: (nb_samples, timesteps, word_vec_dim)"""
 
 def get_questions_tensor_timeseries(questions, nlp, timesteps):
     #assert not isinstance(questions, str)
     nb_samples = len(questions)
-
     word_vec_dim = nlp(questions[0])[0].vector.shape[0]
-
     questions_tensor = np.zeros((nb_samples, timesteps, word_vec_dim))
-
     for i in range(len(questions)):
         tokens = nlp(questions[i])
         for j in range(len(tokens)):

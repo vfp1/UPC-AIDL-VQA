@@ -126,7 +126,7 @@ class VQA_train(object):
     The training of VQA
     """
 
-    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, bsize=256):
+    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, bsize=256, steps_per_epoch=20):
         """
         Defines the training
 
@@ -481,9 +481,15 @@ class VQA_train(object):
             print("TRAINING")
 
             # Deploying in Google Cloud (Linux VM)
+
+            """
+            The steps per epoch are the int(sample_size // batch_size). However, it can get too heavy, so I will leave 
+            a multiple number of the batch size
+            """
+
             try:
                 final_model.fit_generator(generator=training_batch_generator,
-                                          steps_per_epoch=int(sample_size // batch_size),
+                                          steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
                                           verbose=2,
                                           callbacks=[tboard])
@@ -494,7 +500,7 @@ class VQA_train(object):
             except:
 
                 final_model.fit_generator(generator=training_batch_generator,
-                                          steps_per_epoch=1,
+                                          steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
                                           verbose=2)
 
