@@ -24,11 +24,17 @@ from keras.models import model_from_json
 from sklearn.preprocessing import LabelEncoder
 import spacy
 #from spacy.en import English
-from features import *
-from utils import *
-from vqa_data_prep import *
+try:
+    from src.features import *
+    from src.utils import *
+    from src.vqa_data_prep import *
+    from src.models import *
+except:
+    from features import *
+    from utils import *
+    from vqa_data_prep import *
+    from models import *
 
-from models import *
 
 import graphviz
 import pydot_ng as pydot
@@ -38,6 +44,9 @@ from keras.utils import plot_model
 from keras.callbacks import TensorBoard
 
 from sklearn.model_selection import train_test_split
+
+from vqaHelpers import VQA
+import skimage.io as io
 
 
 class VQA_train(object):
@@ -55,10 +64,10 @@ class VQA_train(object):
 
         # Point to preprocessed data
         training_questions = open(os.path.join(data_folder, "preprocessed/ques_val.txt"),"rb").read().decode('utf8').splitlines()
-        training_questions_len = open(os.path.join(data_folder,"preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
-        answers_train = open(os.path.join(data_folder,"preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
-        images_train = open(os.path.join(data_folder,"preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
-        img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
+        training_questions_len = open(os.path.join(data_folder, "preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
+        answers_train = open(os.path.join(data_folder, "preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
+        images_train = open(os.path.join(data_folder, "preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
+        #img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
         vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
 
@@ -75,7 +84,7 @@ class VQA_train(object):
         vgg_features = scipy.io.loadmat(vgg_path)
         img_features = vgg_features['feats']
 
-        id_map = dict()
+        #id_map = dict()
         print("Loaded VGG Weights")
 
 
@@ -151,13 +160,17 @@ class VQA_train(object):
         num_epochs = 2
         #log_interval = 15
 
+        """
+        This was used to map COCO, we have a subset of it
+        
         for ids in img_ids:
             id_split = ids.split()
             id_map[id_split[0]] = int(id_split[1])
-
+        """
         # -------------------------------------------------------------------------------------------------
         # DECIDE MODEL TYPE: MPL_LSTM or VGG_LSTM
 
+        #TODO: fix break at id_map
         if model_type == 1:
             print("USING MLP LSTM model")
 
@@ -229,13 +242,13 @@ class VQA_train(object):
                 plot_model(final_model, to_file= os.path.join(self.output_MLPLSTM_folder, './model.png'))
 
                 epoch_string = 'EPOCH_{}-'.format(num_epochs)
-                batch_size = 'BSIZE_{}-'.format(batch_size)
+                batch_string = 'BSIZE_{}-'.format(batch_size)
                 subset_string = 'SUBSET_{}-'.format(sample_size)
 
                 # Start the time string
                 time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
 
-                log_string = time_string + epoch_string + batch_size + subset_string
+                log_string = time_string + epoch_string + batch_string + subset_string
 
                 path_file = os.path.join(self.output_MLPLSTM_folder, "{}".format(log_string))
 
@@ -283,7 +296,12 @@ class VQA_train(object):
             # -------------------------------------------------------------------------------------------------
             # Image model
             image_model = Sequential()
-            image_model = VGG().VGG_16()
+            #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
+            try:
+                image_model = VGG().VGG_16(weights_path=vgg_path)
+            except:
+                image_model = VGG().VGG_16()
+                #image_model.add(Reshape((img_dim,), input_shape=(img_dim,)))
 
             print(image_model.summary())
 
@@ -323,6 +341,8 @@ class VQA_train(object):
 
             print(final_model.summary())
 
+            # ------------------------------------------------------------
+            # Loading reporting capabilities
             try:
 
                 dir_tools = DirectoryTools()
@@ -332,23 +352,23 @@ class VQA_train(object):
                 try:
 
                     model_dump = final_model.to_json()
-                    with open (os.path.join(self.output_VGGLSTM_folder, 'vgg_lstm_structure.json'), 'w') as dump:
+                    with open(os.path.join(self.output_VGGLSTM_folder, 'vgg_lstm_structure.json'), 'w') as dump:
                         dump.write(model_dump)
 
                 except:
 
                     pass
 
-                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, './model.png'))
+                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, 'VGG_LSTM.png'))
 
                 epoch_string = 'EPOCH_{}-'.format(num_epochs)
-                batch_size = 'BSIZE_{}-'.format(batch_size)
+                batch_string = 'BSIZE_{}-'.format(batch_size)
                 subset_string = 'SUBSET_{}-'.format(sample_size)
 
                 # Start the time string
                 time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
 
-                log_string = time_string + epoch_string + batch_size + subset_string
+                log_string = time_string + epoch_string + batch_string + subset_string
 
                 path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
 
@@ -359,6 +379,9 @@ class VQA_train(object):
 
                 pass
 
+            #-----------------------------------------------------------------------
+            # Preparing train
+
             # This is the timestep of the NLP
             timestep = len(nlp(subset_questions[-1]))
 
@@ -366,7 +389,8 @@ class VQA_train(object):
             X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
             print("Getting images")
-            X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
+            X_img_batch_fit = get_images_matrix_VGG(subset_images, data_folder)
+            #X_img_batch_fit_reshape = np.reshape(X_img_batch_fit, (-1, sample_size, img_dim, img_dim))
 
             print("Get answers")
             Y_batch_fit = get_answers_sum(subset_answers, lbl)
@@ -383,14 +407,11 @@ class VQA_train(object):
                                 batch_size=batch_size, verbose=2,
                                 callbacks=[tboard])
                 final_model.save_weights(
-                    os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
+                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
             except:
 
                 final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs,
                                 batch_size=batch_size, verbose=2)
                 final_model.save_weights(
-                    os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
-
-
-
+                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM" + "_epoch_{}.hdf5".format("FINAL")))
