@@ -22,8 +22,11 @@ from keras.utils import np_utils, generic_utils
 from progressbar import Bar, ETA, Percentage, ProgressBar
 from keras.models import model_from_json
 from sklearn.preprocessing import LabelEncoder
+
 import spacy
 #from spacy.en import English
+
+# Adapting to Google Cloud imports
 try:
     from src.features import *
     from src.utils import *
