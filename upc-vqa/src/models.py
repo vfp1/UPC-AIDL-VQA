@@ -89,9 +89,16 @@ class VGG(object):
         print('Model VGG pre loaded')
         print(base_model.summary())
 
+        """
         # Freeze the layers except the last 4 layers
         print("TRAINABLE LAYERS")
         for layer in base_model.layers[:-4]:
+            layer.trainable = False
+        """
+
+        # Freeze all the VGG layers
+        print("TRAINABLE LAYERS")
+        for layer in base_model.layers:
             layer.trainable = False
 
         # Check the trainable status of the individual layers
