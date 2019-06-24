@@ -117,6 +117,7 @@ class Custom_Batch_Generator(Sequence):
         print("Get answers batch ")
         Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
 
+
         print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
 
         return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
@@ -128,7 +129,8 @@ class VQA_train(object):
 
     def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10,
               bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
-              keras_metrics='categorical_accuracy', learning_rate=0.01, optimizer='rmsprop', fine_tuned=True):
+              keras_metrics='categorical_accuracy', learning_rate=0.01,
+              optimizer='rmsprop', fine_tuned=True, test_size=0.20):
         """
         Defines the training
 
@@ -169,7 +171,7 @@ class VQA_train(object):
             nlp = spacy.load("en_core_web_md")
         except:
             nlp = spacy.load("en_core_web_sm")
-        print("Loaded WordVec")
+        print("Loaded Word2Vec for question encoding")
         
 
         # Load VGG weights (only for MLP, for VGG are loaded later)
@@ -229,7 +231,21 @@ class VQA_train(object):
         print("Sanity check")
         random_id = random.sample(range(len(subset_images)), 1)
         print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+
         print("-----------------------------------------------------------------------")
+        print("TRAIN/TEST SPLIT:")
+
+        subset_questions_train, subset_questions_val, subset_images_train, subset_images_val, subset_answers_train, subset_answers_val  = train_test_split(subset_questions,
+                                                                                                                                                           subset_images,
+                                                                                                                                                           subset_answers,
+                                                                                                                                                           test_size=test_size)
+
+        print("Lenght train:", len(subset_questions_train), len(subset_images_train), len(subset_answers_train))
+        print("Lenght validation:", len(subset_questions_val), len(subset_images_val), len(subset_answers_val))
+
+        print("-----------------------------------------------------------------------")
+        print("ENCODING ANSWERS")
+
 
         # Encoding answers
         lbl = LabelEncoder()
@@ -238,17 +254,9 @@ class VQA_train(object):
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
-        """
-        This was used to map COCO, we have a subset of it
-        
-        for ids in img_ids:
-            id_split = ids.split()
-            id_map[id_split[0]] = int(id_split[1])
-        """
         # -------------------------------------------------------------------------------------------------
         # DECIDE MODEL TYPE: MPL_LSTM or VGG_LSTM
 
-        #TODO: fix break at id_map
         if model_type == 1:
             print("USING MLP LSTM model")
 
@@ -437,7 +445,7 @@ class VQA_train(object):
 
                 raise ValueError("Optimizer not loaded")
 
-            final_model.compile(loss=keras_loss, optimizer=opt, metrics=[keras_metrics])
+            final_model.compile(loss=keras_loss, optimizer=opt, metrics=[keras_metrics, 'accuracy'])
 
             print(final_model.summary())
 
@@ -469,12 +477,14 @@ class VQA_train(object):
                 metrics_string = 'MET_{}--'.format(keras_metrics)
                 optimizer_string = 'OPT_{}--'.format(optimizer)
                 learning_rate_string = 'LR_{}__'.format(learning_rate)
+                test_size_string = 'TS_{}__'.format(test_size)
 
                 # Start the time string
                 time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
 
                 log_string = time_string + epoch_string + batch_string + subset_string + \
-                             loss_string + VGG_string + metrics_string + optimizer_string + learning_rate_string
+                             loss_string + VGG_string + metrics_string + optimizer_string + \
+                             learning_rate_string + test_size_string
 
                 path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
 
@@ -491,12 +501,14 @@ class VQA_train(object):
                 metrics_string = 'MET_{}--'.format(keras_metrics)
                 optimizer_string = 'OPT_{}--'.format(optimizer)
                 learning_rate_string = 'LR_{}__'.format(learning_rate)
+                test_size_string = 'TS_{}__'.format(test_size)
 
                 # Start the time string
                 time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
 
                 log_string = time_string + epoch_string + batch_string + subset_string + \
-                             loss_string + VGG_string + metrics_string + optimizer_string + learning_rate_string
+                             loss_string + VGG_string + metrics_string + optimizer_string + \
+                             learning_rate_string + test_size_string
 
                 pass
 
@@ -504,12 +516,22 @@ class VQA_train(object):
             # Preparing train
 
             print("-----------------------------------------------------------------------")
-            print("GENERATING THE BATCH GENERATOR")
+            print("GENERATING THE TRAIN BATCH GENERATOR")
 
-            timestep = len(nlp(subset_questions[-1]))
+            timestep = len(nlp(subset_questions_train[-1]))
 
-            training_batch_generator = Custom_Batch_Generator(questions=subset_questions, images=subset_images,
-                                                              answers=subset_answers, batch_size=batch_size,
+            train_batch_generator = Custom_Batch_Generator(questions=subset_questions_train, images=subset_images_train,
+                                                              answers=subset_answers_train, batch_size=batch_size,
+                                                              lstm_timestep=timestep, data_folder=data_folder,
+                                                              nlp_load=nlp, lbl_load=lbl)
+
+            print("-----------------------------------------------------------------------")
+            print("GENERATING THE VALIDATION BATCH GENERATOR")
+
+            timestep = len(nlp(subset_questions_val[-1]))
+
+            validation_batch_generator = Custom_Batch_Generator(questions=subset_questions_val, images=subset_images_val,
+                                                              answers=subset_answers_val, batch_size=batch_size,
                                                               lstm_timestep=timestep, data_folder=data_folder,
                                                               nlp_load=nlp, lbl_load=lbl)
 
@@ -524,10 +546,12 @@ class VQA_train(object):
             """
 
             try:
-                final_model.fit_generator(generator=training_batch_generator,
+                final_model.fit_generator(generator=train_batch_generator,
                                           steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
                                           verbose=2,
+                                          validation_data=validation_batch_generator,
+                                          validation_steps=int(steps_per_epoch // 4),
                                           callbacks=[tboard])
 
 
@@ -535,10 +559,12 @@ class VQA_train(object):
 
             except:
 
-                final_model.fit_generator(generator=training_batch_generator,
+                final_model.fit_generator(generator=train_batch_generator,
                                           steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
-                                          verbose=2)
+                                          verbose=2,
+                                          validation_data=validation_batch_generator,
+                                          validation_steps=int(steps_per_epoch // 4))
 
                 final_model.save_weights(
                     os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
