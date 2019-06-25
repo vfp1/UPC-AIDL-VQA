@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
-__author__ = "Victor Pajuelo Madrigal"
-__copyright__ = "Copyright 2019, UPC Group"
-__credits__ = ["Victor Pajuelo Madrigal", "Jiasen Lu", "@abhshkdz"]
-__license__ = "GPL"
-__version__ = "0.1"
-__maintainer__ = "Victor Pajuelo Madrigal"
-__email__ = "-"
-__status__ = "Development"
-
+import datetime
 import sys, warnings
 warnings.filterwarnings("ignore")
 from random import shuffle, sample
@@ -25,60 +17,173 @@ from keras.layers import concatenate
 from keras.layers.core import Dense, Dropout, Activation, Reshape
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
-from keras.optimizers import SGD
+from keras.optimizers import RMSprop
 from keras.utils import np_utils, generic_utils
 from progressbar import Bar, ETA, Percentage, ProgressBar
 from keras.models import model_from_json
 from sklearn.preprocessing import LabelEncoder
+
 import spacy
 #from spacy.en import English
-from features import *
-from utils import *
 
-from models import *
+# Adapting to Google Cloud imports
+try:
+    from src.features import *
+    from src.utils import *
+    from src.vqa_data_prep import *
+    from src.models import *
+except:
+    from features import *
+    from utils import *
+    from vqa_data_prep import *
+    from models import *
+
 
 import graphviz
 import pydot_ng as pydot
 pydot.find_graphviz()
 
-from keras.utils import plot_model
+from keras.utils import plot_model, Sequence
 from keras.callbacks import TensorBoard
+
+from sklearn.model_selection import train_test_split
+
+from vqaHelpers import VQA
+import skimage.io as io
+
+class Custom_Batch_Generator(Sequence):
+    # Here we inherit the Sequence class from keras.utils
+    """
+    A custom Batch Generator to load the dataset from the HDD in
+    batches to memory
+    """
+
+    def __init__(self, questions, images, answers, batch_size, lstm_timestep, data_folder, nlp_load, lbl_load):
+        """
+        Here, we can feed parameters to our generator.
+        :param questions: the preprocessed questions
+        :param images: the preprocessed images
+        :param answers: the preprocessed answers
+        :param batch_size: the batch size
+        :param lstm_timestep: the timestep of the LSTM timestep = len(nlp(subset_questions[-1]))
+        :param data_folder: the data root folder (/aidl/VQA/data/, in Google Cloud
+        :param nlp_load: the nlp processing to be loaded from VQA_train
+        :param lbl_load: the lbl processing to be loaded from VQA_train
+        :param val_coco_id_file: the file for the coco id
+        """
+        self.questions = questions
+        self.images = images
+        self.answers = answers
+        self.batch_size = batch_size
+        self.lstm_timestep = lstm_timestep
+        self.data_folder = data_folder
+        self.nlp_load = nlp_load
+        self.lbl_load = lbl_load
+
+    def __len__(self):
+        """
+        This function computes the number of batches that this generator is supposed to produce.
+        So, we divide the number of total samples by the batch_size and return that value.
+        :return:
+        """
+        return (np.ceil(len(self.images) / float(self.batch_size))).astype(np.int)
+
+    def __getitem__(self, idx):
+
+        """
+        Here, given the batch number idx you need to put together a list
+        that consists of data batch and the ground-truth (GT).
+
+        In our case, this is a tuple of [questions, images] and [answers]
+
+        In __getitem__(self, idx) function you can decide what happens to your dataset when loaded in batches.
+        Here, you can put your preprocessing steps as well.
+
+        :param idx: the batch id
+        :return:
+        """
+        batch_x_questions = self.questions[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_x_images = self.images[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_y_answers = self.answers[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        print("Getting questions batch")
+        X_ques_batch_fit = get_questions_tensor_timeseries(batch_x_questions, self.nlp_load, self.lstm_timestep)
+
+        print("Getting images batch")
+        X_img_batch_fit = get_images_matrix_VGG(self.images, batch_x_images, self.data_folder)
+
+        print("Get answers batch ")
+        Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
+
+
+        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+
+        return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
 
 class VQA_train(object):
     """
-
+    The training of VQA
     """
 
-    def train(self, data_folder):
+    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10,
+              bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
+              keras_metrics='categorical_accuracy', learning_rate=0.01,
+              optimizer='rmsprop', fine_tuned=True, test_size=0.20):
         """
+        Defines the training
 
-        :param data_folder:
+        :param data_folder: the root data folder
+        :param model_type: 1, MLP, LSTM; 2, VGG, LSTM
+        :param num_epochs: the number of epochs
+        :param subset_size: the subset size of VQA dataset, recommended 10,000 at least
+        :param bsize: the batch size, default at 256
         :return:
         """
+        # Setting Hyperparameters
+        batch_size = bsize
+        img_dim = 4096 # the image dimensions for the MLP and the output of the FCN
+        word2vec_dim = 96
+        #max_len = 30 # Required only when using Fixed-Length Padding
+
+        num_hidden_nodes_mlp = 1024
+        num_hidden_nodes_lstm = 512
+        num_layers_mlp = 3
+        num_layers_lstm = 3
+        dropout = 0.5
+        activation_mlp = 'tanh'
+
+        num_epochs = num_epochs
+        #log_interval = 15
 
         # Point to preprocessed data
         training_questions = open(os.path.join(data_folder, "preprocessed/ques_val.txt"),"rb").read().decode('utf8').splitlines()
-        training_questions_len = open(os.path.join(data_folder,"preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
-        answers_train = open(os.path.join(data_folder,"preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
-        images_train = open(os.path.join(data_folder,"preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
-        img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
+        training_questions_len = open(os.path.join(data_folder, "preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
+        answers_train = open(os.path.join(data_folder, "preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
+        images_train = open(os.path.join(data_folder, "preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
+        #img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
-        vgg_path = os.path.join(data_folder, "vgg_weights/vgg_feats.mat")
+        vgg_path = os.path.join(data_folder, "vgg_weights/vgg16_weights.h5")
 
         # Load english dictionary
-        #nlp = spacy.load("en")
         try:
             nlp = spacy.load("en_core_web_md")
         except:
             nlp = spacy.load("en_core_web_sm")
-        print ("Loaded WordVec")
+        print("Loaded Word2Vec for question encoding")
+        
 
-        # Load VGG weights
+        # Load VGG weights (only for MLP, for VGG are loaded later)
+        try:
+            vgg_features = scipy.io.loadmat(vgg_path)
+            img_features = vgg_features['feats']
+        except:
+            pass
 
-        vgg_features = scipy.io.loadmat(vgg_path)
-        img_features = vgg_features['feats']
-        id_map = dict()
-        print ("Loaded VGG Weights")
+        #id_map = dict()
+        print("Loaded VGG Weights")
+
 
         # Number of most frequently occurring answers in COCOVQA (Covering >80% of the total data)
         upper_lim = 1000
@@ -91,9 +196,56 @@ class VQA_train(object):
                                                                                                           training_questions, answers_train,
                                                                                                           images_train))))
         # Sanity check
-        print("A sanity check: Lenght training questions:", len(training_questions))
+        print("-----------------------------------------------------------------------")
+        print("Before subset:")
+        print("Lenght training questions:", len(training_questions))
         print("Lenght answers", len(answers_train))
         print("Lenght number images", len(images_train))
+
+        # Creating subset
+        import random
+
+        subset_questions = []
+        subset_answers = []
+        subset_images = []
+
+        """
+        This below is the total sample size that will be created. It needs to be at least bigger than
+        1000 samples, since we have 1000 possible types of questions
+        """
+
+        sample_size = subset_size
+
+        for index in sorted(random.sample(range(len(images_train)), sample_size)):
+            subset_questions.append(training_questions[index])
+            subset_answers.append(answers_train[index])
+            subset_images.append(images_train[index])
+
+
+        # Sanity check
+        print("-----------------------------------------------------------------------")
+        print("A sanity check: Lenght training questions:", len(subset_questions))
+        print("Lenght training answers:", len(subset_answers))
+        print("Lenght number images", len(subset_images))
+        print("-----------------------------------------------------------------------")
+        print("Sanity check")
+        random_id = random.sample(range(len(subset_images)), 1)
+        print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+
+        print("-----------------------------------------------------------------------")
+        print("TRAIN/TEST SPLIT:")
+
+        subset_questions_train, subset_questions_val, subset_images_train, subset_images_val, subset_answers_train, subset_answers_val  = train_test_split(subset_questions,
+                                                                                                                                                           subset_images,
+                                                                                                                                                           subset_answers,
+                                                                                                                                                           test_size=test_size)
+
+        print("Lenght train:", len(subset_questions_train), len(subset_images_train), len(subset_answers_train))
+        print("Lenght validation:", len(subset_questions_val), len(subset_images_val), len(subset_answers_val))
+
+        print("-----------------------------------------------------------------------")
+        print("ENCODING ANSWERS")
+
 
         # Encoding answers
         lbl = LabelEncoder()
@@ -102,107 +254,318 @@ class VQA_train(object):
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
-        # Setting Hyperparameters
+        # -------------------------------------------------------------------------------------------------
+        # DECIDE MODEL TYPE: MPL_LSTM or VGG_LSTM
 
-        batch_size = 256
-        img_dim = 4096
-        word2vec_dim = 96
-        #max_len = 30 # Required only when using Fixed-Length Padding
+        if model_type == 1:
+            print("USING MLP LSTM model")
 
-        num_hidden_nodes_mlp = 1024
-        num_hidden_nodes_lstm = 512
-        num_layers_mlp = 3
-        num_layers_lstm = 3
-        dropout = 0.5
-        activation_mlp = 'tanh'
-
-        num_epochs = 90
-        log_interval = 15
-
-        for ids in img_ids:
-            id_split = ids.split()
-            id_map[id_split[0]] = int(id_split[1])
-
-        #-------------------------------------------------------------------------------------------------
-        # Image model, a very simple MLP
-        image_model = Sequential()
-        image_model.add(Dense(num_hidden_nodes_mlp, input_dim = img_dim, kernel_initializer='uniform'))
-        image_model.add(Dropout(dropout))
-
-        for i in range(num_layers_mlp):
-            image_model.add(Dense(num_hidden_nodes_mlp, kernel_initializer='uniform'))
-            image_model.add(Activation(activation_mlp))
+            #-------------------------------------------------------------------------------------------------
+            # Image model, a very simple MLP
+            image_model = Sequential()
+            image_model.add(Dense(num_hidden_nodes_mlp, input_dim=img_dim, kernel_initializer='uniform'))
             image_model.add(Dropout(dropout))
-            image_model.add(Dense(nb_classes, kernel_initializer='uniform'))
-        image_model.add(Activation('softmax'))
 
-        print(image_model.summary())
+            for i in range(num_layers_mlp):
+                image_model.add(Dense(num_hidden_nodes_mlp, kernel_initializer='uniform'))
+                image_model.add(Activation(activation_mlp))
+                image_model.add(Dropout(dropout))
+                image_model.add(Dense(nb_classes, kernel_initializer='uniform'))
+            image_model.add(Activation('softmax'))
 
-        #-------------------------------------------------------------------------------------------------
-        # Language mode, LSTM party
-        language_model = Sequential()
-        language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
-                                return_sequences=True, input_shape=(None, word2vec_dim)))
+            print(image_model.summary())
 
-        for i in range(num_layers_lstm-2):
-            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
-        language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
+            #-------------------------------------------------------------------------------------------------
+            # Language mode, LSTM party
+            language_model = Sequential()
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
+                                    return_sequences=True, input_shape=(None, word2vec_dim)))
 
-        print(language_model.summary())
+            for i in range(num_layers_lstm-2):
+                language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
 
-        #-------------------------------------------------------------------------------------------------
-        # Merging both models
-        merged_output = concatenate([language_model.output, image_model.output])
+            print(language_model.summary())
 
-        # Add fully connected layers
-        for i in range(num_layers_mlp):
+            #-------------------------------------------------------------------------------------------------
+            # Merging both models
+            merged_output = concatenate([language_model.output, image_model.output])
 
-            if i == 0:
-                x = merged_output
+            # Add fully connected layers
+            for i in range(num_layers_mlp):
 
-            x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
-            x = Activation('tanh')(x)
-            x = Dropout(0.5)(x)
+                if i == 0:
+                    x = merged_output
 
-        x = Dense(upper_lim)(x)
-        x = (Activation("softmax"))(x)
+                x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
+                x = Activation('tanh')(x)
+                x = Dropout(0.5)(x)
+
+            x = Dense(upper_lim)(x)
+            x = (Activation("softmax"))(x)
+
+            final_model = Model([language_model.input, image_model.input], x)
+
+            final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+            print(final_model.summary())
+
+            try:
+
+                dir_tools = DirectoryTools()
+                self.output_MLPLSTM_folder = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/MLP_LSTM'))
+
+                try:
+
+                    model_dump = final_model.to_json()
+                    with open(os.path.join(self.output_MLPLSTM_folder, 'mlp_lstm_structure.json'), 'w') as dump:
+                        dump.write(model_dump)
+
+                except:
+
+                    pass
+
+                plot_model(final_model, to_file= os.path.join(self.output_MLPLSTM_folder, './model.png'))
+
+                epoch_string = 'EPOCH_{}-'.format(num_epochs)
+                batch_string = 'BSIZE_{}-'.format(batch_size)
+                subset_string = 'SUBSET_{}-'.format(sample_size)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_string + subset_string
+
+                path_file = os.path.join(self.output_MLPLSTM_folder, "{}".format(log_string))
+
+                tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True,
+                                     batch_size=batch_size, write_images=True)
+
+            except:
+
+                pass
+
+            img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
+
+            id_map = dict()
+
+            for ids in img_ids:
+                id_split = ids.split()
+                id_map[id_split[0]] = int(id_split[1])
+
+            # This is the timestep of the NLP
+            timestep = len(nlp(subset_questions[-1]))
+
+            print("Getting questions")
+            X_ques_batch_fit = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
+
+            print("Getting images")
+            X_img_batch_fit = get_images_matrix(subset_images, id_map, img_features)
+
+            print("Get answers")
+            Y_batch_fit = get_answers_sum(subset_answers, lbl)
+
+            print("Questions, Images, Answers")
+            print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
 
 
-        #model_dump = model.to_json()
-        #open(os.path.join(data_folder, "output/lstm_structure'  + '.json'"), 'w').write(model_dump)
+            print("-----------------------------------------------------------------------")
+            print("TRAINING")
 
-        final_model = Model([language_model.input, image_model.input], x)
+            try:
 
-        final_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2,
+                                callbacks=[tboard])
+                final_model.save_weights(os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
-        print(final_model.summary())
+            except:
 
-        plot_model(final_model, to_file='./model.png')
+                final_model.fit([X_ques_batch_fit, X_img_batch_fit], Y_batch_fit, epochs=num_epochs, batch_size=batch_size, verbose=2)
+                final_model.save_weights(os.path.join(self.output_MLPLSTM_folder, "LSTM" + "_epoch_{}.hdf5".format("FINAL")))
 
-        tboard = TensorBoard(log_dir='./', write_graph=True, write_grads=True, batch_size=batch_size, write_images=True)
+        elif model_type == 2:
 
-        print("Lenghts before subset:", len(training_questions), len(images_train), len(answers_train))
+            print("USING VGG LSTM model")
 
-        subset_training_questions = training_questions[0:100]
-        subset_images_train = training_questions[0:100]
-        subset_answers_train = training_questions[0:100]
+            # -------------------------------------------------------------------------------------------------
+            # Image model
+            """
+            This is the VGG model 
+            """
+            image_model = Sequential()
+            #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
 
-        print("Lenghts after subset:", len(subset_training_questions),
-              len(subset_images_train), len(subset_answers_train))
+            if fine_tuned is False:
+                image_model = VGG().VGG_16()
+                VGG_weights = "FALSE"
+
+            elif fine_tuned is True:
+                image_model = VGG().VGG_16_pretrained()
+                VGG_weights = "TRUE"
+
+            print(image_model.summary())
+
+            # -------------------------------------------------------------------------------------------------
+            # Language mode, LSTM party
+            language_model = Sequential()
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm,
+                                    return_sequences=True, input_shape=(None, word2vec_dim)))
+
+            for i in range(num_layers_lstm - 2):
+                language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=True))
+            language_model.add(LSTM(output_dim=num_hidden_nodes_lstm, return_sequences=False))
+
+            print(language_model.summary())
+
+            # -------------------------------------------------------------------------------------------------
+            # Merging both models
+            merged_output = concatenate([language_model.output, image_model.output])
+
+            # Add fully connected layers
+            for i in range(num_layers_mlp):
+
+                if i == 0:
+                    x = merged_output
+
+                x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
+                x = Activation('tanh')(x)
+                x = Dropout(0.5)(x)
+
+            x = Dense(upper_lim)(x)
+            x = (Activation("softmax"))(x)
 
 
-        print("Getting questions")
-        X_ques_batch = get_questions_matrix(subset_training_questions, nlp)
+            final_model = Model([language_model.input, image_model.input], x)
 
-        print("Getting images")
-        X_img_batch = get_images_matrix(subset_images_train, id_map, img_features)
+            if optimizer == 'rmsprop':
 
-        print("Get answers")
-        Y_batch = get_answers_sum(subset_answers_train, lbl)
+                opt = RMSprop(lr=learning_rate)
 
-        print("Questions, Images, Answers")
-        print(X_ques_batch.shape, X_img_batch.shape, Y_batch.shape)
+            else:
 
-        final_model.fit([X_ques_batch, X_img_batch], Y_batch, epochs=2, batch_size=256, verbose=2, callbacks=[tboard])
+                raise ValueError("Optimizer not loaded")
 
-        final_model.save_weights(os.path.join(data_folder, "output/LSTM" + "_epoch_{}.hdf5".format("Hola_Hector")))
+            final_model.compile(loss=keras_loss, optimizer=opt, metrics=[keras_metrics, 'accuracy'])
+
+            print(final_model.summary())
+
+            # ------------------------------------------------------------
+            # Loading reporting capabilities
+            try:
+
+                dir_tools = DirectoryTools()
+                self.output_VGGLSTM_folder = dir_tools.folder_creator(
+                    input_folder=os.path.join(data_folder, 'output/VGG_LSTM'))
+
+                try:
+
+                    model_dump = final_model.to_json()
+                    with open(os.path.join(self.output_VGGLSTM_folder, 'vgg_lstm_structure.json'), 'w') as dump:
+                        dump.write(model_dump)
+
+                except:
+
+                    pass
+
+                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, 'VGG_LSTM.png'))
+
+                epoch_string = 'EPOCH_{}--'.format(num_epochs)
+                batch_string = 'BSIZE_{}--'.format(batch_size)
+                subset_string = 'SUBSET_{}--'.format(sample_size)
+                loss_string = 'LOSS_{}--'.format(keras_loss)
+                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
+                metrics_string = 'MET_{}--'.format(keras_metrics)
+                optimizer_string = 'OPT_{}--'.format(optimizer)
+                learning_rate_string = 'LR_{}__'.format(learning_rate)
+                test_size_string = 'TS_{}__'.format(test_size)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_string + subset_string + \
+                             loss_string + VGG_string + metrics_string + optimizer_string + \
+                             learning_rate_string + test_size_string
+
+                path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
+
+                tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True,
+                                     batch_size=batch_size, write_images=True)
+
+            except:
+
+                epoch_string = 'EPOCH_{}--'.format(num_epochs)
+                batch_string = 'BSIZE_{}--'.format(batch_size)
+                subset_string = 'SUBSET_{}--'.format(sample_size)
+                loss_string = 'LOSS_{}--'.format(keras_loss)
+                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
+                metrics_string = 'MET_{}--'.format(keras_metrics)
+                optimizer_string = 'OPT_{}--'.format(optimizer)
+                learning_rate_string = 'LR_{}__'.format(learning_rate)
+                test_size_string = 'TS_{}__'.format(test_size)
+
+                # Start the time string
+                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
+                log_string = time_string + epoch_string + batch_string + subset_string + \
+                             loss_string + VGG_string + metrics_string + optimizer_string + \
+                             learning_rate_string + test_size_string
+
+                pass
+
+            #-----------------------------------------------------------------------
+            # Preparing train
+
+            print("-----------------------------------------------------------------------")
+            print("GENERATING THE TRAIN BATCH GENERATOR")
+
+            timestep = len(nlp(subset_questions_train[-1]))
+
+            train_batch_generator = Custom_Batch_Generator(questions=subset_questions_train, images=subset_images_train,
+                                                              answers=subset_answers_train, batch_size=batch_size,
+                                                              lstm_timestep=timestep, data_folder=data_folder,
+                                                              nlp_load=nlp, lbl_load=lbl)
+
+            print("-----------------------------------------------------------------------")
+            print("GENERATING THE VALIDATION BATCH GENERATOR")
+
+            timestep = len(nlp(subset_questions_val[-1]))
+
+            validation_batch_generator = Custom_Batch_Generator(questions=subset_questions_val, images=subset_images_val,
+                                                              answers=subset_answers_val, batch_size=batch_size,
+                                                              lstm_timestep=timestep, data_folder=data_folder,
+                                                              nlp_load=nlp, lbl_load=lbl)
+
+            print("-----------------------------------------------------------------------")
+            print("TRAINING")
+
+            # Deploying in Google Cloud (Linux VM)
+
+            """
+            The steps per epoch are the int(sample_size // batch_size). However, it can get too heavy, so I will leave 
+            a multiple number of the batch size
+            """
+
+            try:
+                final_model.fit_generator(generator=train_batch_generator,
+                                          steps_per_epoch=steps_per_epoch,
+                                          epochs=num_epochs,
+                                          verbose=2,
+                                          validation_data=validation_batch_generator,
+                                          validation_steps=int(steps_per_epoch // 4),
+                                          callbacks=[tboard])
+
+
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
+
+            except:
+
+                final_model.fit_generator(generator=train_batch_generator,
+                                          steps_per_epoch=steps_per_epoch,
+                                          epochs=num_epochs,
+                                          verbose=2,
+                                          validation_data=validation_batch_generator,
+                                          validation_steps=int(steps_per_epoch // 4))
+
+                final_model.save_weights(
+                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
+

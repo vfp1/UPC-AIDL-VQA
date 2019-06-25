@@ -1,78 +1,36 @@
 
 # modification of model from https://github.com/avisingh599/visual-qa
-from keras.models import Sequential
-from keras.layers.core import Reshape, Activation, Dropout
-from keras.layers import LSTM, Dense
-from keras.layers.merge import Concatenate
-from keras.layers import Concatenate
+from keras.applications.vgg16 import VGG16
 
 # Modificaiton of file obtained from here
 # https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
-
-from keras.models import Sequential
+from keras import backend as K_back
+from keras.models import Sequential, Model
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import MaxPooling2D, ZeroPadding2D
 from keras.layers.convolutional import Conv2D as Convolution2D
-import numpy as np
-
-import h5py
 
 
 class VGG(object):
     """
+    Keras loading VGG
 
     """
 
-    def pop(self, model):
-        '''
-        Removes a layer instance on top of the layer stack.
-        This code is thanks to @joelthchao https://github.com/fchollet/keras/issues/2371#issuecomment-211734276
-        '''
-        if not model.outputs:
-            raise Exception('Sequential model cannot be popped: model is empty.')
-        else:
-            model.layers.pop()
-            if not model.layers:
-                model.outputs = []
-                model.inbound_nodes = []
-                model.outbound_nodes = []
-            else:
-                model.layers[-1].outbound_nodes = []
-                model.outputs = [model.layers[-1].output]
-            model.built = False
 
-        return model
+    def VGG_16(self):
+        #
+        # Nota: "th" format means that the convolutional kernels will have the shape (depth, input_depth, rows, cols)
+        #       "tf" format means that the convolutional kernels will have the shape (rows, cols, input_depth, depth)
+        #
+        # si K_back.set_image_dim_ordering('th') habría que poner cambiar el reshape y el input_shape=(1, 28, 28) en la CONV2D
+        # David es el puto amo
+        # If we don't put this line, we need the to put X, Y, Z instead of Z, X, Y
+        K_back.set_image_dim_ordering('th')
+        #
 
-
-    def load_model_legacy(self, model, weight_path):
-        '''
-        This function is used because the weights in this model
-        were trained with legacy keras. New keras does not support loading these weights
-        '''
-
-        f = h5py.File(weight_path, mode='r')
-        flattened_layers = model.layers
-
-        nb_layers = f.attrs['nb_layers']
-
-        for k in range(nb_layers):
-            g = f['layer_{}'.format(k)]
-            weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
-            if not weights: continue
-            if len(weights[0].shape) > 2:
-                # swap conv axes
-                # note np.rollaxis does not work with HDF5 Dataset array
-                weights[0] = np.swapaxes(weights[0], 0, 3)
-                weights[0] = np.swapaxes(weights[0], 0, 2)
-                weights[0] = np.swapaxes(weights[0], 1, 2)
-            flattened_layers[k].set_weights(weights)
-
-        f.close()
-
-
-    def VGG_16(self, weights_path=None):
         model = Sequential()
-        model.add(ZeroPadding2D((1, 1), input_shape=(3, 4096, 4096)))
+        model.add(ZeroPadding2D((1, 1), input_shape=(3, 224, 224)))
         model.add(Convolution2D(64, (3, 3), activation='relu'))
         model.add(ZeroPadding2D((1, 1)))
         model.add(Convolution2D(64, (3, 3), activation='relu'))
@@ -112,60 +70,47 @@ class VGG(object):
         model.add(Dense(4096, activation='relu'))
         model.add(Dropout(0.5))
         model.add(Dense(4096, activation='relu'))
-        #model.add(Dropout(0.5))
-        #model.add(Dense(1000, activation='softmax'))
-
-        if weights_path:
-            # model.load_weights(weights_path)
-            self.load_model_legacy(model, weights_path)
-
-        # Remove the last two layers to get the 4096D activations
-        model = self.pop(model)
-        model = self.pop(model)
 
         return model
 
-class VQA_model(object):
-    """
+    def VGG_16_pretrained(self, input_shape=(3, 224, 224)):
+        #
+        # Nota: "th" format means that the convolutional kernels will have the shape (depth, input_depth, rows, cols)
+        #       "tf" format means that the convolutional kernels will have the shape (rows, cols, input_depth, depth)
+        #
+        # si K_back.set_image_dim_ordering('th') habría que poner cambiar el reshape y el input_shape=(1, 28, 28) en la CONV2D
+        # David es el puto amo
+        # If we don't put this line, we need the to put X, Y, Z instead of Z, X, Y
+        K_back.set_image_dim_ordering('th')
+        #
 
-    """
+        base_model = VGG16(include_top=False, input_shape=input_shape, weights='imagenet')
 
-    def VQA_MODEL(self):
-        image_feature_size = 4096
-        word_feature_size = 300
-        number_of_LSTM = 3
-        number_of_hidden_units_LSTM = 512
-        max_length_questions = 30
-        number_of_dense_layers = 3
-        number_of_hidden_units = 1024
-        activation_function = 'tanh'
-        dropout_pct = 0.5
+        print('Model VGG pre loaded')
+        print(base_model.summary())
 
-        # Image model
-        #model_image = Sequential()
-        model_image = VGG().VGG_16()
-        model_image.add(Reshape((image_feature_size,), input_shape=(image_feature_size,)))
+        """
+        # Freeze the layers except the last 4 layers
+        print("TRAINABLE LAYERS")
+        for layer in base_model.layers[:-4]:
+            layer.trainable = False
+        """
 
-        # Language Model
-        model_language = Sequential()
-        model_language.add(
-            LSTM(number_of_hidden_units_LSTM, return_sequences=True, input_shape=(max_length_questions, word_feature_size)))
-        model_language.add(LSTM(number_of_hidden_units_LSTM, return_sequences=True))
-        model_language.add(LSTM(number_of_hidden_units_LSTM, return_sequences=False))
+        # Freeze all the VGG layers
+        print("TRAINABLE LAYERS")
+        for layer in base_model.layers:
+            layer.trainable = False
 
-        # combined model
+        # Check the trainable status of the individual layers
+        for layer in base_model.layers:
+            print(layer, layer.trainable)
 
-        # model = Concatenate()([model_language, model_image])
-        model = Sequential()
-        # model.add(Merge([model_language, model_image], mode='concat', concat_axis=1))
-        model.add(Concatenate([model_language, model_image]))
+        # finetune
+        fine_tuned = Sequential()
+        fine_tuned.add(base_model)
+        fine_tuned.add(Flatten())
+        fine_tuned.add(Dense(4096, activation='relu'))
+        fine_tuned.add(Dropout(0.5))
+        fine_tuned.add(Dense(4096, activation='relu'))
 
-        for _ in range(number_of_dense_layers):
-            model.add(Dense(number_of_hidden_units, kernel_initializer='uniform'))
-            model.add(Activation(activation_function))
-            model.add(Dropout(dropout_pct))
-
-        model.add(Dense(1000))
-        model.add(Activation('softmax'))
-
-        return model
+        return fine_tuned

@@ -16,11 +16,10 @@ the following instructions.
 python -m spacy download en
 ```
 
-### VQA helpers
-This installs the helpers for _ingestion_ and _evaluation_ of the VQA Challenge. This is based on the
-[this repository](https://github.com/vfp1/VQA).
-``` python
-python -m pip install installers/helpers/dist/vqaHelpers-0.4_faster_unzip_capabilities-py3-none-any.whl
+### Ngrok installation
+```bash
+!wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+!unzip ngrok-stable-linux-amd64.zip
 ```
 
 #### Preparing the datasets

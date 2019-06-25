@@ -8,7 +8,13 @@ from tqdm import tqdm
 
 import json   #parse json
 import spacy  #tokenizing text
-from utils import most_freq_answer
+
+# Adapting imports to Google Cloud
+try:
+    from src.utils import most_freq_answer
+except:
+    from utils import most_freq_answer
+
 
 class DirectoryTools(object):
     """

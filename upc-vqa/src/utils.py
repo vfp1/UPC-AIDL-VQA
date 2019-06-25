@@ -45,7 +45,7 @@ def get_questions_sum(questions, nlp):
     return ques_matrix
 
 def get_answers_sum(answers, encoder):
-    assert not isinstance(answers, str)
+    #assert not isinstance(answers, str)
     y = encoder.transform(answers)
     nb_classes = encoder.classes_.shape[0]
     Y = np_utils.to_categorical(y, nb_classes)
@@ -60,7 +60,6 @@ def get_images_matrix(img_id, img_map, vgg_features):
         image_matrix[j,:] = vgg_features[:,img_map[img_id[j]]]
 
     return image_matrix
-
 
 def most_freq_answer(values):
     ans_dict = {}
