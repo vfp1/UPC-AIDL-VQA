@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import datetime
-import sys, warnings
+import warnings
 warnings.filterwarnings("ignore")
 from random import shuffle, sample
+import random
 import pickle as pk
 import gc
 
@@ -127,7 +128,7 @@ class VQA_train(object):
     The training of VQA
     """
 
-    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10,
+    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, subset=False,
               bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20):
@@ -202,35 +203,43 @@ class VQA_train(object):
         print("Lenght answers", len(answers_train))
         print("Lenght number images", len(images_train))
 
-        # Creating subset
-        import random
+        # Setting global variables to bypass subst
+        global subset_questions
+        global subset_answers
+        global subset_images
 
-        subset_questions = []
-        subset_answers = []
-        subset_images = []
+        if subset is True:
+            # Creating subset
+            subset_questions = []
+            subset_answers = []
+            subset_images = []
 
-        """
-        This below is the total sample size that will be created. It needs to be at least bigger than
-        1000 samples, since we have 1000 possible types of questions
-        """
+            """
+            This below is the total sample size that will be created. It needs to be at least bigger than
+            1000 samples, since we have 1000 possible types of questions
+            """
 
-        sample_size = subset_size
+            sample_size = subset_size
 
-        for index in sorted(random.sample(range(len(images_train)), sample_size)):
-            subset_questions.append(training_questions[index])
-            subset_answers.append(answers_train[index])
-            subset_images.append(images_train[index])
+            for index in sorted(random.sample(range(len(images_train)), sample_size)):
+                subset_questions.append(training_questions[index])
+                subset_answers.append(answers_train[index])
+                subset_images.append(images_train[index])
 
 
-        # Sanity check
-        print("-----------------------------------------------------------------------")
-        print("A sanity check: Lenght training questions:", len(subset_questions))
-        print("Lenght training answers:", len(subset_answers))
-        print("Lenght number images", len(subset_images))
-        print("-----------------------------------------------------------------------")
-        print("Sanity check")
-        random_id = random.sample(range(len(subset_images)), 1)
-        print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+            # Sanity check
+            print("-----------------------------------------------------------------------")
+            print("A sanity check: Lenght training questions:", len(subset_questions))
+            print("Lenght training answers:", len(subset_answers))
+            print("Lenght number images", len(subset_images))
+            print("-----------------------------------------------------------------------")
+            print("Sanity check")
+            random_id = random.sample(range(len(subset_images)), 1)
+            print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+
+        elif subset is False:
+            print("TRAINING WITH NO SUBSET")
+            pass
 
         print("-----------------------------------------------------------------------")
         print("TRAIN/TEST SPLIT:")
@@ -471,7 +480,10 @@ class VQA_train(object):
 
                 epoch_string = 'EPOCH_{}--'.format(num_epochs)
                 batch_string = 'BSIZE_{}--'.format(batch_size)
-                subset_string = 'SUBSET_{}--'.format(sample_size)
+                if subset is True:
+                    subset_string = 'SUBSET_{}--'.format(sample_size)
+                elif subset is False:
+                    subset_string = 'SUBSET_{}--'.format(len(subset_images))
                 loss_string = 'LOSS_{}--'.format(keras_loss)
                 VGG_string = 'VGG_w_{}--'.format(VGG_weights)
                 metrics_string = 'MET_{}--'.format(keras_metrics)
@@ -495,7 +507,10 @@ class VQA_train(object):
 
                 epoch_string = 'EPOCH_{}--'.format(num_epochs)
                 batch_string = 'BSIZE_{}--'.format(batch_size)
-                subset_string = 'SUBSET_{}--'.format(sample_size)
+                if subset is True:
+                    subset_string = 'SUBSET_{}--'.format(sample_size)
+                elif subset is False:
+                    subset_string = 'SUBSET_{}--'.format(len(subset_images))
                 loss_string = 'LOSS_{}--'.format(keras_loss)
                 VGG_string = 'VGG_w_{}--'.format(VGG_weights)
                 metrics_string = 'MET_{}--'.format(keras_metrics)

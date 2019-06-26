@@ -2,7 +2,7 @@
 
 # load and evaluate a saved model
 import os
-from keras.models import load_model
+from keras.models import model_from_json
 
 # Adapting to Google Cloud imports
 try:
@@ -20,14 +20,21 @@ import random
 
 from sklearn.preprocessing import LabelEncoder
 import spacy
-import picke as pk
+import pickle as pk
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+import uuid
+
+import json
 
 class VQA_predict(object):
     """
     Evaluation class for the VQA
     """
 
-    def prediction(self, data_folder, weights, subset_size):
+    def prediction(self, data_folder, structure, weights, subset_size=4):
         """
 
         :param data_folder: the folder to the VQA data
@@ -53,7 +60,6 @@ class VQA_predict(object):
         # Loading most frequent occurring answers
         training_questions, answers_train, images_train = freq_answers(training_questions,
                                                                        answers_train, images_train, upper_lim)
-
 
         # Creating subset
         subset_questions = []
@@ -86,10 +92,32 @@ class VQA_predict(object):
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
 
-
-        # Getting data to tensors
-
         timestep = len(nlp(subset_questions[-1]))
+
+        # load_structure
+        structure_path = os.path.join(data_folder, structure)
+
+        with open(structure_path, 'r') as json_file:
+            model_prediction = model_from_json(json_file.read())
+
+        # load model
+        weights_path = os.path.join(data_folder, weights)
+        model_prediction.load_weights(weights_path)
+
+        # summarize model.
+        model_prediction.summary()
+
+        unique_id = str(uuid.uuid4())[:8]
+
+        try:
+
+            dir_tools = DirectoryTools()
+            self.output_VGGLSTM_reports = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports'))
+            self.output_VGGLSTM_reports_uuid = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports/{}'.format(unique_id)))
+
+        except:
+
+            print("Output_folder_not_created")
 
         print("Getting questions batch")
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
@@ -97,17 +125,27 @@ class VQA_predict(object):
         print("Getting images batch")
         X_img = get_images_matrix_VGG(images_train, subset_images, data_folder)
 
-        print("Get answers batch ")
-        Y_answers = get_answers_matrix(subset_answers, lbl)
+        prediction = model_prediction.predict([X_ques, X_img], verbose=1)
+        y_classes = prediction.argmax(axis=-1)
+
+        # This only works with Sequential
+        #prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)
+
+        for ques_id, img_id, ans_id, pred in zip(range(len(subset_questions)), range(len(subset_images)), range(len(subset_answers)), y_classes):
+            # evaluate the model
+            print(subset_questions[ques_id], subset_images[img_id], subset_answers[ans_id], lbl.classes_[pred])
+
+            print(img_id)
+
+            imgFilename = 'COCO_' + 'val2014' + '_' + str(subset_images[int(img_id)]).zfill(12) + '.jpg'
+
+            I = io.imread(os.path.join(data_folder, 'Images/val2014/') + imgFilename)
+            plt.title(subset_questions[int(ques_id)], fontdict=None, loc='center', pad=None)
+            plt.xlabel("Ground truth: " + subset_answers[int(ans_id)] + " Pred: " + lbl.classes_[pred])
+            plt.imshow(I)
+            fig1 = plt.gcf()
+            plt.show()
+            figure_name = (os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format(unique_id, img_id)))
+            fig1.savefig(figure_name)
 
 
-        # load model
-        model_evaluation = load_model(weights)
-
-        # summarize model.
-        model_evaluation.summary()
-
-
-        # evaluate the model
-        score = model_evaluation.evaluate([X_ques, X_img], Y_answers, verbose=1)
-        print("%s: %.2f%%" % (model_evaluation.metrics_names[1], score[1] * 100))

@@ -9,6 +9,7 @@ from keras.models import Sequential, Model
 from keras.layers.core import Flatten, Dense, Dropout
 from keras.layers.convolutional import MaxPooling2D, ZeroPadding2D
 from keras.layers.convolutional import Conv2D as Convolution2D
+import keras.backend as K
 
 
 class VGG(object):
@@ -16,7 +17,6 @@ class VGG(object):
     Keras loading VGG
 
     """
-
 
     def VGG_16(self):
         #
@@ -98,9 +98,9 @@ class VGG(object):
             layer.trainable = False
         """
 
-        # Freeze all the VGG layers
+        # Freeze the bottom layers
         print("TRAINABLE LAYERS")
-        for layer in base_model.layers:
+        for layer in base_model.layers[:4]:
             layer.trainable = False
 
         # Check the trainable status of the individual layers
@@ -116,3 +116,25 @@ class VGG(object):
         fine_tuned.add(Dense(4096, activation='relu'))
 
         return fine_tuned
+
+    def model_loss(self):
+        """" Wrapper function which calculates auxiliary values for the complete loss function.
+         Returns a *function* which calculates the complete loss given only the input and target output """
+        # KL loss
+        kl_loss = self.calculate_kl_loss
+        # Reconstruction loss
+        md_loss_func = self.calculate_md_loss
+
+        # KL weight (to be used by total loss and by annealing scheduler)
+        self.kl_weight = K.variable(self.hps['kl_weight_start'], name='kl_weight')
+        kl_weight = self.kl_weight
+
+        def seq2seq_loss(y_true, y_pred):
+            """ Final loss calculation function to be passed to optimizer"""
+            # Reconstruction loss
+            md_loss = md_loss_func(y_true, y_pred)
+            # Full loss
+            model_loss = kl_weight*kl_loss() + md_loss
+            return model_loss
+
+        return seq2seq_loss
