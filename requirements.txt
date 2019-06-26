@@ -7,3 +7,4 @@ pydot==1.4.1
 pydot-ng==2.0.0
 graphviz==0.11
 scikit-image==0.15.0
+fpdf==1.7.2

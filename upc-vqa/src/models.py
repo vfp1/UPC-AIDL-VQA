@@ -90,6 +90,8 @@ class VGG(object):
         print(base_model.summary())
 
         """
+        Dont be an idiot and freeze the bottom (first) layers [:4]
+        
         # Freeze the layers except the last 4 layers
         print("TRAINABLE LAYERS")
         for layer in base_model.layers[:-4]:

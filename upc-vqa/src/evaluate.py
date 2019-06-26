@@ -22,12 +22,12 @@ from sklearn.preprocessing import LabelEncoder
 import spacy
 import picke as pk
 
-class VQA_predict(object):
+class VQA_evaluate(object):
     """
     Evaluation class for the VQA
     """
 
-    def prediction(self, data_folder, weights, subset_size):
+    def evaluation(self, data_folder, weights, subset_size):
         """
 
         :param data_folder: the folder to the VQA data
