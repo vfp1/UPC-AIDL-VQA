@@ -236,10 +236,10 @@ class VQA_train(object):
             print("TRAINING WITH NO SUBSET")
 
             # Creating subset
-            subset_questions = []
-            subset_answers = []
-            subset_images = []
-            
+            subset_questions = training_questions
+            subset_answers = answers_train
+            subset_images = images_train
+
         print("-----------------------------------------------------------------------")
         print("TRAIN/TEST SPLIT:")
 
