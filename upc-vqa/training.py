@@ -26,7 +26,7 @@ try:
     path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
 
     train.VQA_train().train(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=4,
-                            subset_size=10, subset=True, bsize=2, steps_per_epoch=1,
+                            subset_size=25000, subset=True, bsize=2, steps_per_epoch=1,
                             keras_loss='categorical_crossentropy',
                             keras_metrics='categorical_accuracy', learning_rate=1e-2,
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4)
