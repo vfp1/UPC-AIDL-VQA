@@ -40,23 +40,46 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path):
 
     image_matrix = []
 
+    # Working on old validation datset on local
+    try:
 
-    for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+        for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
 
-        imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+            imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
 
-        I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
+            I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
-        # Resize images to fit in VGG matrix
-        # TODO: not optimal, find ways to pass whole image (padding)
-        image_resized = resize(I, (224, 224), anti_aliasing=True)
+            # Resize images to fit in VGG matrix
+            # TODO: not optimal, find ways to pass whole image (padding)
+            image_resized = resize(I, (224, 224), anti_aliasing=True)
 
-        image_matrix.append(image_resized)
+            image_matrix.append(image_resized)
 
-    # Resizing the shape to have the channels first as keras demands
-    image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-    #print("Shape of COCO images", image_array.shape)
-    return image_array
+        # Resizing the shape to have the channels first as keras demands
+        image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+        #print("Shape of COCO images", image_array.shape)
+        return image_array
+
+    # Working on train dataset on google cloud
+    except:
+
+        for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+            imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+
+            I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
+
+            # Resize images to fit in VGG matrix
+            # TODO: not optimal, find ways to pass whole image (padding)
+            image_resized = resize(I, (224, 224), anti_aliasing=True)
+
+            image_matrix.append(image_resized)
+
+        # Resizing the shape to have the channels first as keras demands
+        image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+        # print("Shape of COCO images", image_array.shape)
+        return image_array
+
+
 
 """Sums the word vectors of all the tokens in a question
 A numpy array of shape: (nb_samples, word_vec_dim)"""
