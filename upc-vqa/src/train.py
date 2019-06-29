@@ -134,7 +134,9 @@ class VQA_train(object):
     def train(self, unique_id, data_folder, model_type=1, num_epochs=4, subset_size=10, subset=False,
               bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
               keras_metrics='categorical_accuracy', learning_rate=0.01,
-              optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4):
+              optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
+              lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3):
+
         """
         Defines the training
 
@@ -151,10 +153,10 @@ class VQA_train(object):
         word2vec_dim = 96
         #max_len = 30 # Required only when using Fixed-Length Padding
 
-        num_hidden_nodes_mlp = 1024
-        num_hidden_nodes_lstm = 512
-        num_layers_mlp = 3
-        num_layers_lstm = 3
+        num_hidden_nodes_mlp = fc_hidden_nodes
+        num_hidden_nodes_lstm = lstm_hidden_nodes
+        num_layers_mlp = fc_num_layers
+        num_layers_lstm = lstm_num_layers
         dropout = 0.5
         activation_mlp = 'tanh'
 
@@ -511,6 +513,12 @@ class VQA_train(object):
                     filewriter.writerow(['Optimizer', '{}'.format(optimizer)])
                     filewriter.writerow(['Learning rate', '{}'.format(learning_rate)])
                     filewriter.writerow(['Test size', '{}'.format(test_size)])
+                    filewriter.writerow(['Word2vec dimension', '{}'.format(word2vec_dim)])
+                    filewriter.writerow(['Hidden nodes LSTM', '{}'.format(num_hidden_nodes_lstm)])
+                    filewriter.writerow(['Hidden layers lstm', '{}'.format(num_layers_lstm)])
+                    filewriter.writerow(['Hidden nodes FC', '{}'.format(num_hidden_nodes_mlp)])
+                    filewriter.writerow(['Number layers FC', '{}'.format(num_layers_mlp)])
+
 
             except:
 
