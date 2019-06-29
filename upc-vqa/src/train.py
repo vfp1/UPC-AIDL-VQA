@@ -205,11 +205,6 @@ class VQA_train(object):
         print("Lenght answers", len(answers_train))
         print("Lenght number images", len(images_train))
 
-        # Setting global variables to bypass subst
-        global subset_questions
-        global subset_answers
-        global subset_images
-
         if subset is True:
             # Creating subset
             subset_questions = []
@@ -241,7 +236,11 @@ class VQA_train(object):
 
         elif subset is False:
             print("TRAINING WITH NO SUBSET")
-            pass
+
+            # Creating subset
+            subset_questions = training_questions
+            subset_answers = answers_train
+            subset_images = images_train
 
         print("-----------------------------------------------------------------------")
         print("TRAIN/TEST SPLIT:")
