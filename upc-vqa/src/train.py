@@ -219,6 +219,9 @@ class VQA_train(object):
 
             sample_size = subset_size
 
+            # Numpy random seed for constant random samples
+            random.seed(42)
+
             for index in sorted(random.sample(range(len(images_train)), sample_size)):
                 subset_questions.append(training_questions[index])
                 subset_answers.append(answers_train[index])
@@ -233,7 +236,7 @@ class VQA_train(object):
             print("-----------------------------------------------------------------------")
             print("Sanity check")
             random_id = random.sample(range(len(subset_images)), 1)
-            print(subset_questions[random_id[0]], subset_answers[random_id[0]], subset_images[random_id[0]])
+            print(subset_questions[1], subset_answers[1], subset_images[1])
 
         elif subset is False:
             print("TRAINING WITH NO SUBSET")
@@ -246,10 +249,13 @@ class VQA_train(object):
         print("-----------------------------------------------------------------------")
         print("TRAIN/TEST SPLIT:")
 
+        # Using random state = 42 to get always same train/test splits
         subset_questions_train, subset_questions_val, subset_images_train, subset_images_val, subset_answers_train, subset_answers_val  = train_test_split(subset_questions,
                                                                                                                                                            subset_images,
                                                                                                                                                            subset_answers,
-                                                                                                                                                           test_size=test_size)
+                                                                                                                                                           test_size=test_size,
+                                                                                                                                                           random_state=42,
+                                                                                                                                                           shuffle=True)
 
         print("Lenght train:", len(subset_questions_train), len(subset_images_train), len(subset_answers_train))
         print("Lenght validation:", len(subset_questions_val), len(subset_images_val), len(subset_answers_val))
