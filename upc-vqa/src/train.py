@@ -219,7 +219,7 @@ class VQA_train(object):
 
             sample_size = subset_size
 
-            # Numpy random seed for constant random samples
+            # Random seed for constant random samples
             seed=42
             random.seed(seed)
 
@@ -236,7 +236,7 @@ class VQA_train(object):
             print("Lenght number images", len(subset_images))
             print("-----------------------------------------------------------------------")
             print("Sanity check full subset")
-            print("Are alien lizard people living under the sand? no 501889")
+            print("Are all of the giraffes standing up straight? no 73726")
             print(subset_questions[1], subset_answers[1], subset_images[1])
 
         elif subset is False:
@@ -263,15 +263,14 @@ class VQA_train(object):
         print("-----------------------------------------------------------------------")
         print("Sanity check train test")
 
-        print("Is there snow? yes 94949")
+        print("Is there traffic? yes 540899")
         print(subset_questions_train[1], subset_answers_train[1], subset_images_train[1])
-        print("What color eyes does the dog have? black 512723")
+        print("What color are the words? yellow 172537")
         print(subset_questions_val[1], subset_answers_val[1], subset_images_val[1])
 
         print("-----------------------------------------------------------------------")
         print("ENCODING ANSWERS")
 
-        """"
         # Encoding answers
         lbl = LabelEncoder()
         lbl.fit(answers_train)
@@ -701,6 +700,5 @@ class VQA_train(object):
 
         print("")
         print("CONGRATULATIONS! TRAIN COMPLETED")
-        
-        """
+
 
