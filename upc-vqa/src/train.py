@@ -220,7 +220,8 @@ class VQA_train(object):
             sample_size = subset_size
 
             # Numpy random seed for constant random samples
-            random.seed(42)
+            seed=42
+            random.seed(seed)
 
             for index in sorted(random.sample(range(len(images_train)), sample_size)):
                 subset_questions.append(training_questions[index])
@@ -235,7 +236,7 @@ class VQA_train(object):
             print("Lenght number images", len(subset_images))
             print("-----------------------------------------------------------------------")
             print("Sanity check full subset")
-            print("Are all of the children wearing helmets? yes 470738")
+            print("Are alien lizard people living under the sand? no 501889")
             print(subset_questions[1], subset_answers[1], subset_images[1])
 
         elif subset is False:
@@ -262,15 +263,15 @@ class VQA_train(object):
         print("-----------------------------------------------------------------------")
         print("Sanity check train test")
 
-        print("Is there snow? no 547960")
+        print("Is there snow? yes 94949")
         print(subset_questions_train[1], subset_answers_train[1], subset_images_train[1])
-        print("What color are the tiles? red 522620")
+        print("What color eyes does the dog have? black 512723")
         print(subset_questions_val[1], subset_answers_val[1], subset_images_val[1])
 
         print("-----------------------------------------------------------------------")
         print("ENCODING ANSWERS")
 
-
+        """"
         # Encoding answers
         lbl = LabelEncoder()
         lbl.fit(answers_train)
@@ -413,9 +414,9 @@ class VQA_train(object):
 
             # -------------------------------------------------------------------------------------------------
             # Image model
-            """
-            This is the VGG model 
-            """
+            
+            # This is the VGG model 
+            
             image_model = Sequential()
             #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
 
@@ -700,4 +701,6 @@ class VQA_train(object):
 
         print("")
         print("CONGRATULATIONS! TRAIN COMPLETED")
+        
+        """
 
