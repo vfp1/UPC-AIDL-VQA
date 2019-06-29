@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 import csv
+import warnings
 
 import datetime
 import warnings
@@ -479,7 +480,7 @@ class VQA_train(object):
 
                 csv_file_name = os.path.join(self.output_VGGLSTM_reports_uuid, "parameters_{}.csv".format(unique_id))
 
-                with open(csv_file_name, mode='wb', newline='') as csv_file:
+                with open(csv_file_name, mode='w', newline='') as csv_file:
                     filewriter = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
                     filewriter.writerow(['Time', '{}'.format(time_string)])
@@ -500,7 +501,9 @@ class VQA_train(object):
 
             except:
 
-                print("Experiment folder, csv and model structure not created")
+                warnings.warn("Experiment csv not generated")
+
+                pass
 
             # ------------------------------------------------------------------------------------------------------------------
             # SAVE MODEL STRUCTURE
@@ -517,6 +520,8 @@ class VQA_train(object):
 
             except:
 
+                warnings.warn("Model structure generated")
+
                 pass
 
             # ------------------------------------------------------------------------------------------------------------------
@@ -527,7 +532,7 @@ class VQA_train(object):
 
             except:
 
-                print("Model plot and tensorboard not created")
+                warnings.warn("Model plot not generated")
 
                 pass
 
@@ -548,7 +553,7 @@ class VQA_train(object):
 
             except:
 
-                print("Tensorboard not ")
+                warnings.warn("Tensorboard not generated")
 
                 pass
 
@@ -557,9 +562,11 @@ class VQA_train(object):
 
             try:
                 # Save history to CSV
-                csv_logger = CSVLogger(os.path.join(self.output_VGGLSTM_reports_uuid, "history_{}".format(unique_id)), append=True, separator=';')
+                csv_logger = CSVLogger(os.path.join(self.output_VGGLSTM_reports_uuid, "history_{}.csv".format(unique_id)), append=True, separator=';')
 
             except:
+
+                warnings.warn("CSV Logger not generated")
 
                 pass
 
@@ -633,7 +640,7 @@ class VQA_train(object):
 
                 # SAVE WEIGHTS
 
-                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_WEIGHTS_uuid_{}.hdf5".format(unique_id)))
 
             except:
 
@@ -676,7 +683,7 @@ class VQA_train(object):
 
                 # SAVE WEIGHTS
 
-                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_WEIGHTS_uuid_{}.hdf5".format(unique_id)))
 
         print("")
         print("CONGRATULATIONS! TRAIN COMPLETED")
