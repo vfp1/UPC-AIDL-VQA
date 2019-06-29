@@ -47,7 +47,7 @@ import pydot_ng as pydot
 pydot.find_graphviz()
 
 from keras.utils import plot_model, Sequence
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, CSVLogger
 
 from sklearn.model_selection import train_test_split
 
@@ -459,7 +459,7 @@ class VQA_train(object):
 
             print(final_model.summary())
 
-            # -------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------------------------------------------------
             # EXPERIMENT REPORTING SETTINGS
 
             time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
@@ -477,9 +477,9 @@ class VQA_train(object):
                 self.output_VGGLSTM_reports_uuid = dir_tools.folder_creator(
                     input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports/{}_{}'.format(time_string, unique_id)))
 
-                csv_file_name = os.path.join(self.output_VGGLSTM_reports_uuid, 'parameters_{}.csv'.format(unique_id))
+                csv_file_name = os.path.join(self.output_VGGLSTM_reports_uuid, "parameters_{}.csv".format(unique_id))
 
-                with open(csv_file_name, mode='w', newline='') as csv_file:
+                with open(csv_file_name, mode='wb', newline='') as csv_file:
                     filewriter = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
                     filewriter.writerow(['Time', '{}'.format(time_string)])
@@ -498,29 +498,43 @@ class VQA_train(object):
                     filewriter.writerow(['Learning rate', '{}'.format(learning_rate)])
                     filewriter.writerow(['Test size', '{}'.format(test_size)])
 
-                try:
-
-                    # Save model structure
-
-                    model_dump = final_model.to_json()
-                    with open(os.path.join(self.output_VGGLSTM_reports_uuid, 'vgg_lstm_structure_{}.json'.format(unique_id)), 'w') as dump:
-                        dump.write(model_dump)
-
-                except:
-
-                    pass
-
             except:
 
                 print("Experiment folder, csv and model structure not created")
 
-"""
+            # ------------------------------------------------------------------------------------------------------------------
+            # SAVE MODEL STRUCTURE
+
+            try:
+
+                # Save model structure
+
+                model_dump = final_model.to_json()
+                with open(
+                        os.path.join(self.output_VGGLSTM_reports_uuid, 'vgg_lstm_structure_{}.json'.format(unique_id)),
+                        'w') as dump:
+                    dump.write(model_dump)
+
+            except:
+
+                pass
+
+            # ------------------------------------------------------------------------------------------------------------------
+            # SAVE MODEL PLOT
             try:
 
                 plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_reports_uuid, 'VGG_LSTM_{}.png'.format(unique_id)))
 
+            except:
 
-                # Start the time string
+                print("Model plot and tensorboard not created")
+
+                pass
+
+            # ------------------------------------------------------------------------------------------------------------------
+            # TENSORBOARD ACTIVATION
+            try:
+                # Tensorboard capabilities
                 dir_tools = DirectoryTools()
 
                 self.output_VGGLSTM_tboard = dir_tools.folder_creator(
@@ -534,7 +548,18 @@ class VQA_train(object):
 
             except:
 
-                print("Model plot and tensorboard not created")
+                print("Tensorboard not ")
+
+                pass
+
+            # ------------------------------------------------------------------------------------------------------------------
+            # CSV HISTORY LOGGER
+
+            try:
+                # Save history to CSV
+                csv_logger = CSVLogger(os.path.join(self.output_VGGLSTM_reports_uuid, "history_{}".format(unique_id)), append=True, separator=';')
+
+            except:
 
                 pass
 
@@ -577,7 +602,7 @@ class VQA_train(object):
                                           verbose=2,
                                           validation_data=validation_batch_generator,
                                           validation_steps=int(steps_per_epoch // 4),
-                                          callbacks=[tboard])
+                                          callbacks=[tboard, csv_logger])
 
                 # list all data in history
                 print(history.history.keys())
@@ -588,7 +613,13 @@ class VQA_train(object):
                 plt.ylabel('accuracy')
                 plt.xlabel('epoch')
                 plt.legend(['train', 'test'], loc='upper left')
-                plt.show()
+                fig1 = plt.gcf()
+                figure_name = (os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format("accuracy", unique_id)))
+                fig1.savefig(figure_name)
+
+                # clear model
+                plt.clf()
+
                 # summarize history for loss
                 plt.plot(history.history['loss'])
                 plt.plot(history.history['val_loss'])
@@ -596,19 +627,23 @@ class VQA_train(object):
                 plt.ylabel('loss')
                 plt.xlabel('epoch')
                 plt.legend(['train', 'test'], loc='upper left')
-                plt.show()
+                fig2 = plt.gcf()
+                figure_name = (os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format("loss", unique_id)))
+                fig2.savefig(figure_name)
 
+                # SAVE WEIGHTS
 
                 final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
 
             except:
 
                 history = final_model.fit_generator(generator=train_batch_generator,
-                                          steps_per_epoch=steps_per_epoch,
-                                          epochs=num_epochs,
-                                          verbose=2,
-                                          validation_data=validation_batch_generator,
-                                          validation_steps=int(steps_per_epoch // 4))
+                                                    steps_per_epoch=steps_per_epoch,
+                                                    epochs=num_epochs,
+                                                    verbose=2,
+                                                    validation_data=validation_batch_generator,
+                                                    validation_steps=int(steps_per_epoch // 4),
+                                                    callbacks=[csv_logger])
 
                 # list all data in history
                 print(history.history.keys())
@@ -619,7 +654,14 @@ class VQA_train(object):
                 plt.ylabel('accuracy')
                 plt.xlabel('epoch')
                 plt.legend(['train', 'test'], loc='upper left')
-                plt.show()
+                fig1 = plt.gcf()
+                figure_name = (
+                    os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format("accuracy", unique_id)))
+                fig1.savefig(figure_name)
+
+                # clear model
+                plt.clf()
+
                 # summarize history for loss
                 plt.plot(history.history['loss'])
                 plt.plot(history.history['val_loss'])
@@ -627,12 +669,15 @@ class VQA_train(object):
                 plt.ylabel('loss')
                 plt.xlabel('epoch')
                 plt.legend(['train', 'test'], loc='upper left')
-                plt.show()
+                fig2 = plt.gcf()
+                figure_name = (
+                    os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format("loss", unique_id)))
+                fig2.savefig(figure_name)
+
+                # SAVE WEIGHTS
 
                 final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
 
         print("")
         print("CONGRATULATIONS! TRAIN COMPLETED")
-        
-        """
 
