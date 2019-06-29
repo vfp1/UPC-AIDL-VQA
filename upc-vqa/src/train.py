@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import matplotlib.pyplot as plt
+import csv
 
 import datetime
 import warnings
@@ -128,10 +130,10 @@ class VQA_train(object):
     The training of VQA
     """
 
-    def train(self, data_folder, model_type=1, num_epochs=4, subset_size=10, subset=False,
+    def train(self, unique_id, data_folder, model_type=1, num_epochs=4, subset_size=10, subset=False,
               bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
               keras_metrics='categorical_accuracy', learning_rate=0.01,
-              optimizer='rmsprop', fine_tuned=True, test_size=0.20):
+              optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4):
         """
         Defines the training
 
@@ -409,7 +411,7 @@ class VQA_train(object):
                 VGG_weights = "FALSE"
 
             elif fine_tuned is True:
-                image_model = VGG().VGG_16_pretrained()
+                image_model = VGG().VGG_16_pretrained(frozen_layers=vgg_frozen)
                 VGG_weights = "TRUE"
 
             print(image_model.summary())
@@ -458,72 +460,82 @@ class VQA_train(object):
 
             print(final_model.summary())
 
-            # ------------------------------------------------------------
-            # Loading reporting capabilities
+            # -------------------------------------------------------------------------------------------------
+            # EXPERIMENT REPORTING SETTINGS
+
+            time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+
             try:
 
                 dir_tools = DirectoryTools()
+
                 self.output_VGGLSTM_folder = dir_tools.folder_creator(
                     input_folder=os.path.join(data_folder, 'output/VGG_LSTM'))
 
+                self.output_VGGLSTM_reports = dir_tools.folder_creator(
+                    input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports'))
+
+                self.output_VGGLSTM_reports_uuid = dir_tools.folder_creator(
+                    input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports/{}_{}'.format(time_string, unique_id)))
+
+                csv_file_name = os.path.join(self.output_VGGLSTM_reports_uuid, 'parameters_{}.csv'.format(unique_id))
+
+                with open(csv_file_name, mode='w', newline='') as csv_file:
+                    filewriter = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+                    filewriter.writerow(['Time', '{}'.format(time_string)])
+                    filewriter.writerow(['Folder name', '{}'.format(unique_id)])
+                    filewriter.writerow(['Epochs', '{}'.format(num_epochs)])
+                    filewriter.writerow(['Batch size', '{}'.format(batch_size)])
+                    if subset is True:
+                        filewriter.writerow(['Subset', '{}'.format(sample_size)])
+                    elif subset is False:
+                        filewriter.writerow(['Batch size', '{}'.format(len(sample_size))])
+                    filewriter.writerow(['Loss', '{}'.format(keras_loss)])
+                    filewriter.writerow(['VGG weights', '{}'.format(VGG_weights)])
+                    filewriter.writerow(['VGG frozen layers', '{}'.format(vgg_frozen)])
+                    filewriter.writerow(['Metrics', '{}'.format(keras_metrics)])
+                    filewriter.writerow(['Optimizer', '{}'.format(optimizer)])
+                    filewriter.writerow(['Learning rate', '{}'.format(learning_rate)])
+                    filewriter.writerow(['Test size', '{}'.format(test_size)])
+
                 try:
 
+                    # Save model structure
+
                     model_dump = final_model.to_json()
-                    with open(os.path.join(self.output_VGGLSTM_folder, 'vgg_lstm_structure.json'), 'w') as dump:
+                    with open(os.path.join(self.output_VGGLSTM_reports_uuid, 'vgg_lstm_structure_{}.json'.format(unique_id)), 'w') as dump:
                         dump.write(model_dump)
 
                 except:
 
                     pass
 
-                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_folder, 'VGG_LSTM.png'))
+            except:
 
-                epoch_string = 'EPOCH_{}--'.format(num_epochs)
-                batch_string = 'BSIZE_{}--'.format(batch_size)
-                if subset is True:
-                    subset_string = 'SUBSET_{}--'.format(sample_size)
-                elif subset is False:
-                    subset_string = 'SUBSET_{}--'.format(len(subset_images))
-                loss_string = 'LOSS_{}--'.format(keras_loss)
-                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
-                metrics_string = 'MET_{}--'.format(keras_metrics)
-                optimizer_string = 'OPT_{}--'.format(optimizer)
-                learning_rate_string = 'LR_{}__'.format(learning_rate)
-                test_size_string = 'TS_{}__'.format(test_size)
+                print("Experiment folder, csv and model structure not created")
+
+"""
+            try:
+
+                plot_model(final_model, to_file=os.path.join(self.output_VGGLSTM_reports_uuid, 'VGG_LSTM_{}.png'.format(unique_id)))
+
 
                 # Start the time string
-                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
+                dir_tools = DirectoryTools()
 
-                log_string = time_string + epoch_string + batch_string + subset_string + \
-                             loss_string + VGG_string + metrics_string + optimizer_string + \
-                             learning_rate_string + test_size_string
+                self.output_VGGLSTM_tboard = dir_tools.folder_creator(
+                    input_folder=os.path.join(data_folder, 'output/VGG_LSTM/tboard_logs'))
 
-                path_file = os.path.join(self.output_VGGLSTM_folder, "{}".format(log_string))
+
+                path_file = os.path.join(self.output_VGGLSTM_tboard, "{}_{}".format(time_string, unique_id))
 
                 tboard = TensorBoard(log_dir=path_file, write_graph=True, write_grads=True,
                                      batch_size=batch_size, write_images=True)
 
             except:
 
-                epoch_string = 'EPOCH_{}--'.format(num_epochs)
-                batch_string = 'BSIZE_{}--'.format(batch_size)
-                if subset is True:
-                    subset_string = 'SUBSET_{}--'.format(sample_size)
-                elif subset is False:
-                    subset_string = 'SUBSET_{}--'.format(len(subset_images))
-                loss_string = 'LOSS_{}--'.format(keras_loss)
-                VGG_string = 'VGG_w_{}--'.format(VGG_weights)
-                metrics_string = 'MET_{}--'.format(keras_metrics)
-                optimizer_string = 'OPT_{}--'.format(optimizer)
-                learning_rate_string = 'LR_{}__'.format(learning_rate)
-                test_size_string = 'TS_{}__'.format(test_size)
-
-                # Start the time string
-                time_string = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-")
-
-                log_string = time_string + epoch_string + batch_string + subset_string + \
-                             loss_string + VGG_string + metrics_string + optimizer_string + \
-                             learning_rate_string + test_size_string
+                print("Model plot and tensorboard not created")
 
                 pass
 
@@ -555,13 +567,12 @@ class VQA_train(object):
 
             # Deploying in Google Cloud (Linux VM)
 
-            """
-            The steps per epoch are the int(sample_size // batch_size). However, it can get too heavy, so I will leave 
-            a multiple number of the batch size
-            """
+            #The steps per epoch are the int(sample_size // batch_size). However, it can get too heavy, so I will leave 
+            #a multiple number of the batch size
+         
 
             try:
-                final_model.fit_generator(generator=train_batch_generator,
+                history = final_model.fit_generator(generator=train_batch_generator,
                                           steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
                                           verbose=2,
@@ -569,18 +580,60 @@ class VQA_train(object):
                                           validation_steps=int(steps_per_epoch // 4),
                                           callbacks=[tboard])
 
+                # list all data in history
+                print(history.history.keys())
+                # summarize history for accuracy
+                plt.plot(history.history['acc'])
+                plt.plot(history.history['val_acc'])
+                plt.title('model accuracy')
+                plt.ylabel('accuracy')
+                plt.xlabel('epoch')
+                plt.legend(['train', 'test'], loc='upper left')
+                plt.show()
+                # summarize history for loss
+                plt.plot(history.history['loss'])
+                plt.plot(history.history['val_loss'])
+                plt.title('model loss')
+                plt.ylabel('loss')
+                plt.xlabel('epoch')
+                plt.legend(['train', 'test'], loc='upper left')
+                plt.show()
 
-                final_model.save_weights(os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
+
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
 
             except:
 
-                final_model.fit_generator(generator=train_batch_generator,
+                history = final_model.fit_generator(generator=train_batch_generator,
                                           steps_per_epoch=steps_per_epoch,
                                           epochs=num_epochs,
                                           verbose=2,
                                           validation_data=validation_batch_generator,
                                           validation_steps=int(steps_per_epoch // 4))
 
-                final_model.save_weights(
-                    os.path.join(self.output_VGGLSTM_folder, "VGG_LSTM_" + log_string + "_epoch_{}.hdf5".format("FINAL")))
+                # list all data in history
+                print(history.history.keys())
+                # summarize history for accuracy
+                plt.plot(history.history['acc'])
+                plt.plot(history.history['val_acc'])
+                plt.title('model accuracy')
+                plt.ylabel('accuracy')
+                plt.xlabel('epoch')
+                plt.legend(['train', 'test'], loc='upper left')
+                plt.show()
+                # summarize history for loss
+                plt.plot(history.history['loss'])
+                plt.plot(history.history['val_loss'])
+                plt.title('model loss')
+                plt.ylabel('loss')
+                plt.xlabel('epoch')
+                plt.legend(['train', 'test'], loc='upper left')
+                plt.show()
+
+                final_model.save_weights(os.path.join(self.output_VGGLSTM_reports_uuid, "VGG_LSTM_epoch_{}_uuid_{}.hdf5".format("FINAL", unique_id)))
+
+        print("")
+        print("CONGRATULATIONS! TRAIN COMPLETED")
+        
+        """
 

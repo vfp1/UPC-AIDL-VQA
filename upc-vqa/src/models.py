@@ -73,7 +73,7 @@ class VGG(object):
 
         return model
 
-    def VGG_16_pretrained(self, input_shape=(3, 224, 224)):
+    def VGG_16_pretrained(self, input_shape=(3, 224, 224), frozen_layers=4):
         #
         # Nota: "th" format means that the convolutional kernels will have the shape (depth, input_depth, rows, cols)
         #       "tf" format means that the convolutional kernels will have the shape (rows, cols, input_depth, depth)
@@ -100,7 +100,7 @@ class VGG(object):
 
         # Freeze the bottom layers
         print("TRAINABLE LAYERS")
-        for layer in base_model.layers[:4]:
+        for layer in base_model.layers[:frozen_layers]:
             layer.trainable = False
 
         # Check the trainable status of the individual layers
