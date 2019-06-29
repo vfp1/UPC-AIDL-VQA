@@ -36,7 +36,7 @@ except:
     path = "/aidl/VQA/data/"
 
     train.VQA_train().train(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=25,
-                            subset_size=25000, subset=False, bsize=50, steps_per_epoch=20,
+                            subset_size=25000, subset=True, bsize=50, steps_per_epoch=20,
                             keras_loss='categorical_crossentropy',
                             keras_metrics='categorical_accuracy', learning_rate=1e-3,
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4)
