@@ -235,7 +235,7 @@ class VQA_train(object):
             print("Lenght number images", len(subset_images))
             print("-----------------------------------------------------------------------")
             print("Sanity check full subset")
-            print("Are all bears clothed? no 432234")
+            print("Are all of the children wearing helmets? yes 470738")
             print(subset_questions[1], subset_answers[1], subset_images[1])
 
         elif subset is False:
@@ -262,9 +262,9 @@ class VQA_train(object):
         print("-----------------------------------------------------------------------")
         print("Sanity check train test")
 
-        print("Is there a washing machine in this kitchen? yes 552883")
+        print("Is there snow? no 547960")
         print(subset_questions_train[1], subset_answers_train[1], subset_images_train[1])
-        print("What brand of computer keyboard? apple 417804")
+        print("What color are the tiles? red 522620")
         print(subset_questions_val[1], subset_answers_val[1], subset_images_val[1])
 
         print("-----------------------------------------------------------------------")
