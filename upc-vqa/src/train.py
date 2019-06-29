@@ -234,8 +234,8 @@ class VQA_train(object):
             print("Lenght training answers:", len(subset_answers))
             print("Lenght number images", len(subset_images))
             print("-----------------------------------------------------------------------")
-            print("Sanity check")
-            random_id = random.sample(range(len(subset_images)), 1)
+            print("Sanity check full subset")
+            print("Are the men wearing wetsuits? yes 233961")
             print(subset_questions[1], subset_answers[1], subset_images[1])
 
         elif subset is False:
@@ -259,6 +259,13 @@ class VQA_train(object):
 
         print("Lenght train:", len(subset_questions_train), len(subset_images_train), len(subset_answers_train))
         print("Lenght validation:", len(subset_questions_val), len(subset_images_val), len(subset_answers_val))
+        print("-----------------------------------------------------------------------")
+        print("Sanity check train test")
+
+        print("What color is the zebra? black and white 7566")
+        print(subset_questions_train[1], subset_answers_train[1], subset_images_train[1])
+        print("Are the men wearing wetsuits? yes 233961")
+        print(subset_questions_val[1], subset_answers_val[1], subset_images_val[1])
 
         print("-----------------------------------------------------------------------")
         print("ENCODING ANSWERS")
