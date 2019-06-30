@@ -125,14 +125,24 @@ class VQA_predict(object):
 
             print("Output_folder_not_created")
 
+        # --------------------------------------------------------------------------------------------------------------
+
         print("Getting questions batch")
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
         print("Getting images batch")
         X_img = get_images_matrix_VGG(images_train, subset_images, data_folder, train_or_val='val')
 
+        # --------------------------------------------------------------------------------------------------------------
+        # PREDICTIONS
+
         prediction = model_prediction.predict([X_ques, X_img], verbose=1)
         y_classes = prediction.argmax(axis=-1)
+
+        top_values_index = sorted(range(len(prediction)), key=lambda i: prediction[i])[-5:]
+        print(top_values_index)
+
+
 
         # This only works with Sequential
         #prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)

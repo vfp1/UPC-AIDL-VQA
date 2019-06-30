@@ -86,7 +86,7 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
 
     if tf_pad_resize is True:
         # Start tensorflow session
-        sess = tf.Session()
+        sess = K.get_session()
 
         if train_or_val == 'val':
 
@@ -109,8 +109,6 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
 
             # Resizing the shape to have the channels first as keras demands
             image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-
-            sess.close()
 
             return image_array
 
@@ -136,8 +134,6 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
 
             # Resizing the shape to have the channels first as keras demands
             image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-
-            sess.close()
 
             return image_array
 
