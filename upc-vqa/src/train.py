@@ -466,7 +466,7 @@ class VQA_train(object):
             if merge_method == 'concatenate':
                 merged_output = concatenate([language_model.output, image_model.output])
             elif merge_method == 'dot':
-                merged_output = dot([language_model.output, image_model.output], normalize=dot_normalize)
+                merged_output = dot([language_model.output, image_model.output], axes=-1, normalize=dot_normalize)
 
             # Add fully connected layers
             for i in range(num_layers_mlp):
