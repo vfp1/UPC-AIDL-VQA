@@ -123,7 +123,7 @@ class VQA_predict(object):
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
         print("Getting images batch")
-        X_img = get_images_matrix_VGG(images_train, subset_images, data_folder)
+        X_img = get_images_matrix_VGG(images_train, subset_images, data_folder, train_or_val='val')
 
         prediction = model_prediction.predict([X_ques, X_img], verbose=1)
         y_classes = prediction.argmax(axis=-1)

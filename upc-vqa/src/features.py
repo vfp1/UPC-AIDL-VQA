@@ -10,6 +10,9 @@ import skimage.io as io
 import os
 from skimage.transform import resize
 
+import tensorflow as tf
+from tensorflow.python.keras import backend as K
+
 from tqdm import tqdm
 
 """Gets the 4096-dimensional CNN features for the given COCO
@@ -34,51 +37,113 @@ def get_images_matrix(img_coco_ids, img_map, VGGfeatures):
 	Ouput:
 	A numpy matrix of size (nb_samples, nb_dimensions)"""
 
-def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path):
+def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_val='train', tf_pad_resize=True):
 
     #assert not isinstance(img_coco_ids, str)
 
     image_matrix = []
 
-    # Working on old validation datset on local
-    try:
+    # Using scikit image resize
 
-        for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+    if tf_pad_resize is False:
 
-            imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+        if train_or_val == 'val':
 
-            I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
+            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
 
-            # Resize images to fit in VGG matrix
-            # TODO: not optimal, find ways to pass whole image (padding)
-            image_resized = resize(I, (224, 224), anti_aliasing=True)
+                imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
 
-            image_matrix.append(image_resized)
+                I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
-        # Resizing the shape to have the channels first as keras demands
-        image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-        #print("Shape of COCO images", image_array.shape)
-        return image_array
+                # Resize images to fit in VGG matrix
+                # TODO: not optimal, find ways to pass whole image (padding)
+                image_resized = resize(I, (224, 224), anti_aliasing=True)
 
-    # Working on train dataset on google cloud
-    except:
+                image_matrix.append(image_resized)
 
-        for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
-            imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+            # Resizing the shape to have the channels first as keras demands
+            image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+            return image_array
 
-            I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
+        elif train_or_val == 'train':
 
-            # Resize images to fit in VGG matrix
-            # TODO: not optimal, find ways to pass whole image (padding)
-            image_resized = resize(I, (224, 224), anti_aliasing=True)
+            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+                imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
 
-            image_matrix.append(image_resized)
+                I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
 
-        # Resizing the shape to have the channels first as keras demands
-        image_array = np.rollaxis(np.array(image_matrix), 3, 1)
-        # print("Shape of COCO images", image_array.shape)
-        return image_array
+                # Resize images to fit in VGG matrix
+                # TODO: not optimal, find ways to pass whole image (padding)
+                image_resized = resize(I, (224, 224), anti_aliasing=True)
 
+                image_matrix.append(image_resized)
+
+            # Resizing the shape to have the channels first as keras demands
+            image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+            return image_array
+
+    # Using tensorflow crop
+
+    if tf_pad_resize is True:
+
+        if train_or_val == 'val':
+
+            image_matrix = []
+
+            # Start tensorflow session
+            sess = tf.Session()
+
+            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+                imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+
+                I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
+
+                # Resize images to fit in VGG matrix
+                #Get the images as a constant
+                tf_images = tf.constant(I)
+                image_cropped = tf.image.resize_image_with_crop_or_pad(image=tf_images, target_height=224, target_width=224)
+
+                with sess.as_default():
+                    image_array = sess.run(image_cropped)
+
+                image_matrix.append(image_array)
+
+            # Resizing the shape to have the channels first as keras demands
+            image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+
+            sess.close()
+
+            return image_array
+
+        elif train_or_val == 'train':
+
+            image_matrix = []
+
+            # Start tensorflow session
+            sess = tf.Session()
+
+            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+                imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+
+                I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
+
+                # Resize images to fit in VGG matrix
+                # Get the images as a constant
+                tf_images = tf.constant(I)
+                image_cropped = tf.image.resize_image_with_crop_or_pad(image=tf_images, target_height=224,
+                                                                       target_width=224)
+
+                with sess.as_default():
+                    image_array = sess.run(image_cropped)
+
+                image_matrix.append(image_array)
+
+            # Resizing the shape to have the channels first as keras demands
+            image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+
+            sess.close()
+
+            return image_array
 
 
 """Sums the word vectors of all the tokens in a question
