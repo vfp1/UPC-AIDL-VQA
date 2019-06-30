@@ -34,7 +34,7 @@ class VQA_predict(object):
     Evaluation class for the VQA
     """
 
-    def prediction(self, data_folder, structure, weights, subset_size=4):
+    def prediction(self, data_folder, structure, weights, subset_size=10):
         """
 
         :param data_folder: the folder to the VQA data
@@ -44,13 +44,13 @@ class VQA_predict(object):
         """
 
         # Point to preprocessed data
-        training_questions = open(os.path.join(data_folder, "evaluate/ques_val.txt"), "rb").read().decode(
+        test_questions = open(os.path.join(data_folder, "evaluate/ques_val.txt"), "rb").read().decode(
             'utf8').splitlines()
-        training_questions_len = open(os.path.join(data_folder, "evaluate/ques_val_len.txt"), "rb").read().decode(
+        test_questions_len = open(os.path.join(data_folder, "evaluate/ques_val_len.txt"), "rb").read().decode(
             'utf8').splitlines()
-        answers_train = open(os.path.join(data_folder, "evaluate/answer_val.txt"), "rb").read().decode(
+        test_answers = open(os.path.join(data_folder, "evaluate/answer_val.txt"), "rb").read().decode(
             'utf8').splitlines()
-        images_train = open(os.path.join(data_folder, "evaluate/val_images_coco_id.txt"), "rb").read().decode(
+        test_images = open(os.path.join(data_folder, "evaluate/val_images_coco_id.txt"), "rb").read().decode(
             'utf8').splitlines()
 
 
@@ -58,8 +58,7 @@ class VQA_predict(object):
         upper_lim = 1000
 
         # Loading most frequent occurring answers
-        training_questions, answers_train, images_train = freq_answers(training_questions,
-                                                                       answers_train, images_train, upper_lim)
+        test_questions_f, test_answers_f, test_images_f = freq_answers(test_questions, test_answers, test_images, upper_lim)
 
         # Creating subset
         subset_questions = []
@@ -79,10 +78,10 @@ class VQA_predict(object):
         random.seed(seed)
         """
 
-        for index in sorted(random.sample(range(len(images_train)), sample_size)):
-            subset_questions.append(training_questions[index])
-            subset_answers.append(answers_train[index])
-            subset_images.append(images_train[index])
+        for index in sorted(random.sample(range(len(test_images)), sample_size)):
+            subset_questions.append(test_questions_f[index])
+            subset_answers.append(test_answers_f[index])
+            subset_images.append(test_images_f[index])
 
         # Load english dictionary
         try:
@@ -93,7 +92,7 @@ class VQA_predict(object):
 
         # Encoding answers
         lbl = LabelEncoder()
-        lbl.fit(answers_train)
+        lbl.fit(test_answers)
         nb_classes = len(list(lbl.classes_))
         print("Number of classes:", nb_classes)
         pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
@@ -131,7 +130,11 @@ class VQA_predict(object):
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
         print("Getting images batch")
-        X_img = get_images_matrix_VGG(images_train, subset_images, data_folder, train_or_val='val')
+        X_img = get_images_matrix_VGG(test_images, subset_images, data_folder, train_or_val='val')
+
+        print("Get answers batch ")
+        Y_answers = get_answers_matrix(subset_answers, lbl)
+
 
         # --------------------------------------------------------------------------------------------------------------
         # PREDICTIONS
@@ -139,9 +142,18 @@ class VQA_predict(object):
         prediction = model_prediction.predict([X_ques, X_img], verbose=1)
         y_classes = prediction.argmax(axis=-1)
 
-        top_values_index = sorted(range(len(prediction)), key=lambda i: prediction[i])[-5:]
-        print(top_values_index)
+        print(len(prediction))
+        print(len(Y_answers))
 
+        output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=2)
+
+        with tf.Session() as sess:
+            result = sess.run(output)
+
+        print(result)
+
+
+        print(len(y_classes))
 
 
         # This only works with Sequential
@@ -151,7 +163,8 @@ class VQA_predict(object):
             # evaluate the model
             print(subset_questions[ques_id], subset_images[img_id], subset_answers[ans_id], lbl.classes_[pred])
 
-            print(img_id)
+            top_values = [y_classes[i] for i in np.argsort(y_classes)[-5:]]
+            print(top_values)
 
             imgFilename = 'COCO_' + 'val2014' + '_' + str(subset_images[int(img_id)]).zfill(12) + '.jpg'
 

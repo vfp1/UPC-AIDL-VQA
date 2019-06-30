@@ -102,9 +102,11 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
                 tf_images = tf.constant(I)
                 image_cropped = tf.image.resize_image_with_crop_or_pad(image=tf_images, target_height=224, target_width=224)
 
-                with sess.as_default():
-                    image_array = sess.run(image_cropped)
+                image_normalized = tf.image.per_image_standardization(image_cropped)
 
+                with sess.as_default():
+                    image_array = sess.run(image_normalized)
+                    
                 image_matrix.append(image_array)
 
             # Resizing the shape to have the channels first as keras demands
@@ -126,9 +128,10 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
                 tf_images = tf.constant(I)
                 image_cropped = tf.image.resize_image_with_crop_or_pad(image=tf_images, target_height=224,
                                                                        target_width=224)
+                image_normalized = tf.image.per_image_standardization(image_cropped)
 
                 with sess.as_default():
-                    image_array = sess.run(image_cropped)
+                    image_array = sess.run(image_normalized)
 
                 image_matrix.append(image_array)
 
