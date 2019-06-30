@@ -85,13 +85,12 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
     # Using tensorflow crop
 
     if tf_pad_resize is True:
+        # Start tensorflow session
+        sess = tf.Session()
 
         if train_or_val == 'val':
 
             image_matrix = []
-
-            # Start tensorflow session
-            sess = tf.Session()
 
             for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
                 imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
@@ -118,9 +117,6 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
         elif train_or_val == 'train':
 
             image_matrix = []
-
-            # Start tensorflow session
-            sess = tf.Session()
 
             for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
                 imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'

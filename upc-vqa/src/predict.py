@@ -73,6 +73,12 @@ class VQA_predict(object):
 
         sample_size = subset_size
 
+        """    
+        # Random seed for constant random samples
+        seed = 42
+        random.seed(seed)
+        """
+
         for index in sorted(random.sample(range(len(images_train)), sample_size)):
             subset_questions.append(training_questions[index])
             subset_answers.append(answers_train[index])

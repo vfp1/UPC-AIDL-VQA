@@ -21,8 +21,8 @@ except:
 try:
 
     path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
-    weights = "vgg_weights/VGG_LSTM_20190624-100549-EPOCH_20--BSIZE_50--SUBSET_60000--LOSS_categorical_crossentropy--VGG_w_TRUE--MET_categorical_accuracy--OPT_rmsprop--LR_0.001__TS_0.2___epoch_FINAL.hdf5"
-    structure = "vgg_weights/vgg_lstm_structure.json"
+    weights = "output/VGG_LSTM/reports/20190630-083118-_666b9c1b/VGG_LSTM_WEIGHTS_uuid_666b9c1b.hdf5"
+    structure = "output/VGG_LSTM/reports/20190630-083118-_666b9c1b/vgg_lstm_structure_666b9c1b.json"
 
     predict.VQA_predict().prediction(data_folder=path, structure=structure, weights=weights)
 
@@ -31,4 +31,4 @@ except:
     path = "/aidl/VQA/data/"
     weights = os.path.join(path, "")
 
-    predict.VQA_predict().prediction(data_folder=path, weights=weights, subset_size=1)
+    predict.VQA_predict().prediction(data_folder=path, structure=structure, weights=weights, subset_size=1)
