@@ -44,13 +44,13 @@ class VQA_predict(object):
         """
 
         # Point to preprocessed data
-        training_questions = open(os.path.join(data_folder, "preprocessed/ques_val.txt"), "rb").read().decode(
+        training_questions = open(os.path.join(data_folder, "evaluate/ques_val.txt"), "rb").read().decode(
             'utf8').splitlines()
-        training_questions_len = open(os.path.join(data_folder, "preprocessed/ques_val_len.txt"), "rb").read().decode(
+        training_questions_len = open(os.path.join(data_folder, "evaluate/ques_val_len.txt"), "rb").read().decode(
             'utf8').splitlines()
-        answers_train = open(os.path.join(data_folder, "preprocessed/answer_val.txt"), "rb").read().decode(
+        answers_train = open(os.path.join(data_folder, "evaluate/answer_val.txt"), "rb").read().decode(
             'utf8').splitlines()
-        images_train = open(os.path.join(data_folder, "preprocessed/val_images_coco_id.txt"), "rb").read().decode(
+        images_train = open(os.path.join(data_folder, "evaluate/val_images_coco_id.txt"), "rb").read().decode(
             'utf8').splitlines()
 
 

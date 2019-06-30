@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import scipy.io
 from keras.models import Sequential, Model
-from keras.layers import concatenate, dot
+from keras.layers import concatenate, multiply
 from keras.layers.core import Dense, Dropout, Activation, Reshape
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
@@ -136,7 +136,7 @@ class VQA_train(object):
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
-              merge_method='concatenate', dot_normalize=False):
+              merge_method='concatenate'):
 
         """
         Defines the training
@@ -161,7 +161,6 @@ class VQA_train(object):
         :param fc_hidden_nodes: the number of FC hidden nodes after model merges, set to 1024
         :param fc_num_layers: the number of FC layers (DENSE)
         :param merge_method: the chosen merge method, either concatenate or dot
-        :param dot_normalize: the normalization to L2 if using dot
 
         :return: the VQA train
         """
@@ -465,8 +464,8 @@ class VQA_train(object):
             # Merging both models
             if merge_method == 'concatenate':
                 merged_output = concatenate([language_model.output, image_model.output])
-            elif merge_method == 'dot':
-                merged_output = dot([language_model.output, image_model.output], axes=-1, normalize=dot_normalize)
+            elif merge_method == 'multiply':
+                merged_output = multiply([language_model.output, image_model.output])
 
             # Add fully connected layers
             for i in range(num_layers_mlp):
