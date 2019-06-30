@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import scipy.io
 from keras.models import Sequential, Model
-from keras.layers import concatenate
+from keras.layers import concatenate, dot
 from keras.layers.core import Dense, Dropout, Activation, Reshape
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
@@ -131,21 +131,39 @@ class VQA_train(object):
     The training of VQA
     """
 
-    def train(self, unique_id, data_folder, model_type=1, num_epochs=4, subset_size=10, subset=False,
+    def train(self, unique_id, data_folder, model_type=1, num_epochs=4, subset_size=25000, subset=False,
               bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
-              lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3):
+              lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
+              merge_method='concatenate', dot_normalize=False):
 
         """
         Defines the training
 
+        :param unique_id: the unique id for the experiment
         :param data_folder: the root data folder
         :param model_type: 1, MLP, LSTM; 2, VGG, LSTM
         :param num_epochs: the number of epochs
-        :param subset_size: the subset size of VQA dataset, recommended 10,000 at least
+        :param subset_size: the subset size of VQA dataset, recommended 25000 by default
+        :param subset: whether to subset the dataset or not
         :param bsize: the batch size, default at 256
-        :return:
+        :param steps_per_epoch: the steps for each epoch
+        :param keras_loss: the chosen keras loss
+        :param keras_metrics: the chosen keras metrics
+        :param learning_rate: the chosen learning rate
+        :param optimizer: the chosen optimizer
+        :param fine_tuned: whether to fine tune VGG or not
+        :param test_size: the split test size, set to 80/20
+        :param vgg_frozen: the number of frozen layers
+        :param lstm_hidden_nodes: the LSTM hidden nodes, set to 512
+        :param lstm_num_layers: the number of chosen LSTM layers
+        :param fc_hidden_nodes: the number of FC hidden nodes after model merges, set to 1024
+        :param fc_num_layers: the number of FC layers (DENSE)
+        :param merge_method: the chosen merge method, either concatenate or dot
+        :param dot_normalize: the normalization to L2 if using dot
+
+        :return: the VQA train
         """
         # Setting Hyperparameters
         batch_size = bsize
@@ -445,7 +463,10 @@ class VQA_train(object):
 
             # -------------------------------------------------------------------------------------------------
             # Merging both models
-            merged_output = concatenate([language_model.output, image_model.output])
+            if merge_method == 'concatenate':
+                merged_output = concatenate([language_model.output, image_model.output])
+            elif merge_method == 'dot':
+                merged_output = dot([language_model.output, image_model.output], normalize=dot_normalize)
 
             # Add fully connected layers
             for i in range(num_layers_mlp):
@@ -515,9 +536,10 @@ class VQA_train(object):
                     filewriter.writerow(['Test size', '{}'.format(test_size)])
                     filewriter.writerow(['Word2vec dimension', '{}'.format(word2vec_dim)])
                     filewriter.writerow(['Hidden nodes LSTM', '{}'.format(num_hidden_nodes_lstm)])
-                    filewriter.writerow(['Hidden layers lstm', '{}'.format(num_layers_lstm)])
+                    filewriter.writerow(['Hidden layers LSTM', '{}'.format(num_layers_lstm)])
                     filewriter.writerow(['Hidden nodes FC', '{}'.format(num_hidden_nodes_mlp)])
                     filewriter.writerow(['Number layers FC', '{}'.format(num_layers_mlp)])
+                    filewriter.writerow(['Merge methods', '{}'.format(merge_method)])
 
 
             except:
