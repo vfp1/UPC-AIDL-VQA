@@ -126,7 +126,6 @@ class Custom_Batch_Generator(Sequence):
         print("Get answers batch ")
         Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
 
-
         print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
 
         return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
@@ -485,8 +484,12 @@ class VQA_train(object):
                 x = Dropout(0.5)(x)
 
             x = Dense(upper_lim)(x)
-            x = (Activation("softmax"))(x)
 
+            # Change last activation depending on loss function
+            if keras_loss == 'categorical_hinge':
+                x = (Activation("linear"))(x)
+            else:
+                x = (Activation("softmax"))(x)
 
             final_model = Model([language_model.input, image_model.input], x)
 
