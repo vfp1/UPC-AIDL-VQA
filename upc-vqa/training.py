@@ -40,11 +40,11 @@ except:
     path = "/aidl/VQA/data/"
 
     train.VQA_train().train(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=25,
-                            subset_size=25000, subset=True, bsize=50, steps_per_epoch=20,
+                            subset_size=25000, subset=True, bsize=10, steps_per_epoch=20,
                             keras_loss='categorical_crossentropy',
                             keras_metrics='categorical_accuracy', learning_rate=1e-4,
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
-                            lstm_hidden_nodes=512, lstm_num_layers=6, fc_hidden_nodes=1024, fc_num_layers=6,
-                            merge_method='concatenate', tf_crop_bool=True, image_standarization=True,
+                            lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
+                            merge_method='concatenate', tf_crop_bool=False, image_standarization=True,
                             vgg_finetuned_dropout=0.5, vgg_finetuned_activation='relu',
                             merged_dropout_num=0.5, merged_activation='tanh')
