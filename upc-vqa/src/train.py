@@ -62,7 +62,8 @@ class Custom_Batch_Generator(Sequence):
     batches to memory
     """
 
-    def __init__(self, questions, images, answers, batch_size, lstm_timestep, data_folder, nlp_load, lbl_load, tf_crop):
+    def __init__(self, questions, images, answers, batch_size, lstm_timestep,
+                 data_folder, nlp_load, lbl_load, tf_crop, img_standarization):
         """
         Here, we can feed parameters to our generator.
         :param questions: the preprocessed questions
@@ -84,6 +85,7 @@ class Custom_Batch_Generator(Sequence):
         self.nlp_load = nlp_load
         self.lbl_load = lbl_load
         self.tf_crop = tf_crop
+        self.img_standarization = img_standarization
 
     def __len__(self):
         """
@@ -117,7 +119,9 @@ class Custom_Batch_Generator(Sequence):
         X_ques_batch_fit = get_questions_tensor_timeseries(batch_x_questions, self.nlp_load, self.lstm_timestep)
 
         print("Getting images batch")
-        X_img_batch_fit = get_images_matrix_VGG(self.images, batch_x_images, self.data_folder, train_or_val='train', tf_pad_resize=self.tf_crop)
+        X_img_batch_fit = get_images_matrix_VGG(self.images, batch_x_images, self.data_folder,
+                                                train_or_val='train', standarization=self.img_standarization,
+                                                tf_pad_resize=self.tf_crop)
 
         print("Get answers batch ")
         Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
@@ -137,7 +141,7 @@ class VQA_train(object):
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
-              merge_method='concatenate', tf_crop_bool=False):
+              merge_method='concatenate', tf_crop_bool=False, image_standarization=True):
 
         """
         Defines the training
@@ -163,6 +167,7 @@ class VQA_train(object):
         :param fc_num_layers: the number of FC layers (DENSE)
         :param merge_method: the chosen merge method, either concatenate or dot
         :param tf_crop_bool: True/False cropping the images with tensorflow (True) or scikit image (False)
+        :param image_standarization: whether to do image scaling for zero mean and unit variance
 
         :return: the VQA train
         """
@@ -542,6 +547,7 @@ class VQA_train(object):
                     filewriter.writerow(['Number layers FC', '{}'.format(num_layers_mlp)])
                     filewriter.writerow(['Merge methods', '{}'.format(merge_method)])
                     filewriter.writerow(['Image TF Crop', '{}'.format(tf_crop_bool)])
+                    filewriter.writerow(['Image Standarization', '{}'.format(image_standarization)])
 
 
             except:
@@ -626,7 +632,7 @@ class VQA_train(object):
             train_batch_generator = Custom_Batch_Generator(questions=subset_questions_train, images=subset_images_train,
                                                               answers=subset_answers_train, batch_size=batch_size,
                                                               lstm_timestep=timestep, data_folder=data_folder,
-                                                              nlp_load=nlp, lbl_load=lbl, tf_crop=tf_crop_bool)
+                                                              nlp_load=nlp, lbl_load=lbl, tf_crop=tf_crop_bool, img_standarization=image_standarization)
 
             print("-----------------------------------------------------------------------")
             print("GENERATING THE VALIDATION BATCH GENERATOR")
@@ -636,7 +642,7 @@ class VQA_train(object):
             validation_batch_generator = Custom_Batch_Generator(questions=subset_questions_val, images=subset_images_val,
                                                               answers=subset_answers_val, batch_size=batch_size,
                                                               lstm_timestep=timestep, data_folder=data_folder,
-                                                              nlp_load=nlp, lbl_load=lbl, tf_crop=tf_crop_bool)
+                                                              nlp_load=nlp, lbl_load=lbl, tf_crop=tf_crop_bool, img_standarization=image_standarization)
 
             print("-----------------------------------------------------------------------")
             print("TRAINING")

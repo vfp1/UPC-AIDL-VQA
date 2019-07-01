@@ -9,6 +9,7 @@ import random
 import skimage.io as io
 import os
 from skimage.transform import resize
+from sklearn import preprocessing
 
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
@@ -37,7 +38,8 @@ def get_images_matrix(img_coco_ids, img_map, VGGfeatures):
 	Ouput:
 	A numpy matrix of size (nb_samples, nb_dimensions)"""
 
-def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_val='train', tf_pad_resize=True):
+def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
+                          train_or_val='train', standarization=True, tf_pad_resize=False):
 
     #assert not isinstance(img_coco_ids, str)
 
@@ -59,7 +61,16 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
                 # TODO: not optimal, find ways to pass whole image (padding)
                 image_resized = resize(I, (224, 224), anti_aliasing=True)
 
-                image_matrix.append(image_resized)
+                if standarization is True:
+                    # Standarization for zero mean and unit variance
+                    image_resized_scaled = image_resized.scale(image_resized)
+
+                    image_matrix.append(image_resized_scaled)
+
+                elif standarization is False:
+
+                    image_matrix.append(image_resized)
+
 
             # Resizing the shape to have the channels first as keras demands
             image_array = np.rollaxis(np.array(image_matrix), 3, 1)
@@ -76,7 +87,15 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
                 # TODO: not optimal, find ways to pass whole image (padding)
                 image_resized = resize(I, (224, 224), anti_aliasing=True)
 
-                image_matrix.append(image_resized)
+                if standarization is True:
+                    # Standarization for zero mean and unit variance
+                    image_resized_scaled = image_resized.scale(image_resized)
+
+                    image_matrix.append(image_resized_scaled)
+
+                elif standarization is False:
+
+                    image_matrix.append(image_resized)
 
             # Resizing the shape to have the channels first as keras demands
             image_array = np.rollaxis(np.array(image_matrix), 3, 1)
@@ -106,7 +125,7 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path, train_or_v
 
                 with sess.as_default():
                     image_array = sess.run(image_normalized)
-                    
+
                 image_matrix.append(image_array)
 
             # Resizing the shape to have the channels first as keras demands

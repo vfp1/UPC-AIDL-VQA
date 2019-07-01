@@ -60,6 +60,10 @@ class VQA_predict(object):
         # Loading most frequent occurring answers
         test_questions_f, test_answers_f, test_images_f = freq_answers(test_questions, test_answers, test_images, upper_lim)
 
+        test_questions_len, test_questions, test_answers, test_images = (list(t) for t in zip(*sorted(zip(test_questions_len,
+                                                                                                          test_questions_f, test_answers_f,
+                                                                                                          test_images_f))))
+
         # Creating subset
         subset_questions = []
         subset_answers = []
@@ -79,9 +83,9 @@ class VQA_predict(object):
         """
 
         for index in sorted(random.sample(range(len(test_images)), sample_size)):
-            subset_questions.append(test_questions_f[index])
-            subset_answers.append(test_answers_f[index])
-            subset_images.append(test_images_f[index])
+            subset_questions.append(test_questions[index])
+            subset_answers.append(test_answers[index])
+            subset_images.append(test_images[index])
 
         # Load english dictionary
         try:
@@ -142,19 +146,12 @@ class VQA_predict(object):
         prediction = model_prediction.predict([X_ques, X_img], verbose=1)
         y_classes = prediction.argmax(axis=-1)
 
-        print(len(prediction))
-        print(len(Y_answers))
-
-        output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=2)
+        output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
 
         with tf.Session() as sess:
             result = sess.run(output)
 
-        print(result)
-
-
-        print(len(y_classes))
-
+        print("Top k", result)
 
         # This only works with Sequential
         #prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)
