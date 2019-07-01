@@ -63,7 +63,7 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
                 if standarization is True:
                     # Standarization for zero mean and unit variance
-                    image_resized_scaled = image_resized.scale(image_resized)
+                    image_resized_scaled = preprocessing.scale(image_resized)
 
                     image_matrix.append(image_resized_scaled)
 
@@ -89,7 +89,7 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
                 if standarization is True:
                     # Standarization for zero mean and unit variance
-                    image_resized_scaled = image_resized.scale(image_resized)
+                    image_resized_scaled = preprocessing.scale(image_resized)
 
                     image_matrix.append(image_resized_scaled)
 
