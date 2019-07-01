@@ -122,7 +122,7 @@ class Custom_Batch_Generator(Sequence):
 
         print("Getting images batch")
         X_img_batch_fit = get_images_matrix_VGG(batch_x_images, self.data_folder,
-                                                train_or_val='val', standarization=self.img_standarization,
+                                                train_or_val='train', standarization=self.img_standarization,
                                                 tf_pad_resize=self.tf_crop)
 
         print("Get answers batch ")
@@ -195,10 +195,10 @@ class VQA_train(object):
         #log_interval = 15
 
         # Point to preprocessed data
-        training_questions = open(os.path.join(data_folder, "evaluate/ques_val.txt"),"rb").read().decode('utf8').splitlines()
-        training_questions_len = open(os.path.join(data_folder, "evaluate/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
-        answers_train = open(os.path.join(data_folder, "evaluate/answer_val.txt"),"rb").read().decode('utf8').splitlines()
-        images_train = open(os.path.join(data_folder, "evaluate/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
+        training_questions = open(os.path.join(data_folder, "preprocessed/ques_val.txt"),"rb").read().decode('utf8').splitlines()
+        training_questions_len = open(os.path.join(data_folder, "preprocessed/ques_val_len.txt"),"rb").read().decode('utf8').splitlines()
+        answers_train = open(os.path.join(data_folder, "preprocessed/answer_val.txt"),"rb").read().decode('utf8').splitlines()
+        images_train = open(os.path.join(data_folder, "preprocessed/val_images_coco_id.txt"),"rb").read().decode('utf8').splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/coco_vgg_IDMap.txt')).read().splitlines()
         #img_ids = open(os.path.join(data_folder,'preprocessed/val_images_coco_id.txt')).read().splitlines()
         vgg_path = os.path.join(data_folder, "vgg_weights/vgg16_weights.h5")
