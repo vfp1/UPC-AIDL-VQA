@@ -140,7 +140,8 @@ class VQA_train(object):
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
-              merge_method='concatenate', tf_crop_bool=False, image_standarization=True):
+              merge_method='concatenate', tf_crop_bool=False, image_standarization=True, merged_dropout_num=0.5,
+              merged_activation='tanh'):
 
         """
         Defines the training
@@ -167,6 +168,8 @@ class VQA_train(object):
         :param merge_method: the chosen merge method, either concatenate or dot
         :param tf_crop_bool: True/False cropping the images with tensorflow (True) or scikit image (False)
         :param image_standarization: whether to do image scaling for zero mean and unit variance
+        :param merged_dropout_num: the dropout for the merged part
+        :param merged_activation: the activation function for the merged part
 
         :return: the VQA train
         """
@@ -180,7 +183,7 @@ class VQA_train(object):
         num_hidden_nodes_lstm = lstm_hidden_nodes
         num_layers_mlp = fc_num_layers
         num_layers_lstm = lstm_num_layers
-        dropout = 0.5
+        dropout = merged_dropout_num
         activation_mlp = 'tanh'
 
         num_epochs = num_epochs
@@ -480,8 +483,8 @@ class VQA_train(object):
                     x = merged_output
 
                 x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
-                x = Activation('tanh')(x)
-                x = Dropout(0.5)(x)
+                x = Activation(merged_activation)(x)
+                x = Dropout(merged_dropout_num)(x)
 
             x = Dense(upper_lim)(x)
 
@@ -551,6 +554,8 @@ class VQA_train(object):
                     filewriter.writerow(['Merge methods', '{}'.format(merge_method)])
                     filewriter.writerow(['Image TF Crop', '{}'.format(tf_crop_bool)])
                     filewriter.writerow(['Image Standarization', '{}'.format(image_standarization)])
+                    filewriter.writerow(['Dropout in the merged model', '{}'.format(merged_dropout_num)])
+                    filewriter.writerow(['Activation in the merged model', '{}'.format(merged_activation)])
 
 
             except:
