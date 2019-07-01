@@ -32,7 +32,8 @@ try:
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
                             lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
                             merge_method='concatenate', tf_crop_bool=False, image_standarization=True,
-                            merged_dropout_num=0.1, merged_activation='softmax')
+                            finetuned_dropout=0.5, finetuned_activation='relu',
+                            merged_dropout_num=0.5, merged_activation='tanh')
 
 except:
 
@@ -45,4 +46,5 @@ except:
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
                             lstm_hidden_nodes=512, lstm_num_layers=6, fc_hidden_nodes=1024, fc_num_layers=6,
                             merge_method='concatenate', tf_crop_bool=True, image_standarization=True,
-                            merged_dropout_num=0.1, merged_activation='softmax')
+                            finetuned_dropout=0.5, finetuned_activation='relu',
+                            merged_dropout_num=0.5, merged_activation='tanh')
