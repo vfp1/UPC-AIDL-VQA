@@ -84,7 +84,7 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                         print("Probably a grayscale image:", image_id)
 
                         # Adding channel dimension to a grayscale image
-                        stacked_img = np.stack((image_resized,)*3, axis=0)
+                        stacked_img = np.stack((image_resized,)*3, axis=-1)
 
                         print("Shape of reshaped grayscale image:", stacked_img.shape)
 
@@ -141,7 +141,7 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                         print("Probably a grayscale image:", image_id)
 
                         # Adding channel dimension to a grayscale image
-                        stacked_img = np.stack((image_resized,)*3, axis=0)
+                        stacked_img = np.stack((image_resized,)*3, axis=-1)
 
                         print("Shape of reshaped grayscale image:", stacked_img.shape)
 
