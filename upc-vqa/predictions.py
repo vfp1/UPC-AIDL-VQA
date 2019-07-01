@@ -21,14 +21,13 @@ except:
 try:
 
     path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
-    weights = "output/VGG_LSTM/reports/20190630-083118-_666b9c1b/VGG_LSTM_WEIGHTS_uuid_666b9c1b.hdf5"
-    structure = "output/VGG_LSTM/reports/20190630-083118-_666b9c1b/vgg_lstm_structure_666b9c1b.json"
+    time_and_uuid = "20190701-142414-_808fd7e5"
 
-    predict.VQA_predict().prediction(data_folder=path, structure=structure, weights=weights)
+    predict.VQA_predict().prediction(data_folder=path, time_and_uuid=time_and_uuid, subset_size=10, model_type=2)
 
 except:
 
     path = "/aidl/VQA/data/"
-    weights = os.path.join(path, "")
+    time_and_uuid = "20190701-142414-_808fd7e5"
 
-    predict.VQA_predict().prediction(data_folder=path, structure=structure, weights=weights, subset_size=1)
+    predict.VQA_predict().prediction(data_folder=path, time_and_uuid=time_and_uuid, model_type=2)

@@ -23,25 +23,25 @@ import spacy
 import pickle as pk
 
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-
-import uuid
-
-import json
 
 class VQA_predict(object):
     """
     Evaluation class for the VQA
     """
 
-    def prediction(self, data_folder, structure, weights, subset_size=10):
+    def prediction(self, data_folder, time_and_uuid, subset_size=1, model_type=2):
         """
 
         :param data_folder: the folder to the VQA data
-        :param model: the model that we want to load, in hdf5 data type
-        :param weights: the weights associated with that model
+        :param time_and_uuid: the weights associated with that model
+        :param subset_size: the amount of predicts to do
+        :param model_type: the type of model, 1= MLP_LSTM, 2=VGG_LSTM
+
         :return: the final accuracy for the model
         """
+
+        # --------------------------------------------------------------------------------------------------------------
+        # PREPARING PATHS
 
         # Point to preprocessed data
         test_questions = open(os.path.join(data_folder, "evaluate/ques_val.txt"), "rb").read().decode(
@@ -53,6 +53,41 @@ class VQA_predict(object):
         test_images = open(os.path.join(data_folder, "evaluate/val_images_coco_id.txt"), "rb").read().decode(
             'utf8').splitlines()
 
+        # Point to time_and_uuid sources
+        global unique_id
+        global weights
+        global structure
+
+        # MLP_LSTM
+        if model_type == 1:
+
+            results_folder = os.path.join(data_folder, 'output/VGG_LSTM/reports/{}'.format(time_and_uuid))
+
+            unique_id = time_and_uuid.split("_", 1)[1]
+
+            weights = os.path.join(results_folder, 'MLP_LSTM_WEIGHTS_uuid_{}.hdf5'.format(unique_id))
+
+            structure = os.path.join(results_folder, 'mlp_lstm_structure_{}.json'.format(unique_id))
+
+            dir_tools = DirectoryTools()
+            self.predictions_folder = dir_tools.folder_creator(input_folder=os.path.join(results_folder, 'predictions'))
+
+        #VGG_LSTM
+        elif model_type == 2:
+
+            results_folder = os.path.join(data_folder, 'output/VGG_LSTM/reports/{}'.format(time_and_uuid))
+
+            unique_id = time_and_uuid.split("_", 1)[1]
+
+            weights = os.path.join(results_folder, 'VGG_LSTM_WEIGHTS_uuid_{}.hdf5'.format(unique_id))
+
+            structure = os.path.join(results_folder, 'vgg_lstm_structure_{}.json'.format(unique_id))
+
+            dir_tools = DirectoryTools()
+            self.predictions_folder = dir_tools.folder_creator(input_folder=os.path.join(results_folder, 'predictions'))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # SETTING SUBSET
 
         # Number of most frequently occurring answers in COCOVQA (Covering >80% of the total data)
         upper_lim = 1000
@@ -61,7 +96,8 @@ class VQA_predict(object):
         test_questions_f, test_answers_f, test_images_f = freq_answers(test_questions, test_answers, test_images, upper_lim)
 
         test_questions_len, test_questions, test_answers, test_images = (list(t) for t in zip(*sorted(zip(test_questions_len,
-                                                                                                          test_questions_f, test_answers_f,
+                                                                                                          test_questions_f,
+                                                                                                          test_answers_f,
                                                                                                           test_images_f))))
 
         # Creating subset
@@ -87,6 +123,9 @@ class VQA_predict(object):
             subset_answers.append(test_answers[index])
             subset_images.append(test_images[index])
 
+        # --------------------------------------------------------------------------------------------------------------
+        # LOADING DICTIONARIES, STRUCTURES AND WEIGHTS
+
         # Load english dictionary
         try:
             nlp = spacy.load("en_core_web_md")
@@ -104,61 +143,57 @@ class VQA_predict(object):
         timestep = len(nlp(subset_questions[-1]))
 
         # load_structure
-        structure_path = os.path.join(data_folder, structure)
-
-        with open(structure_path, 'r') as json_file:
+        with open(structure, 'r') as json_file:
             model_prediction = model_from_json(json_file.read())
 
         # load model
-        weights_path = os.path.join(data_folder, weights)
-        model_prediction.load_weights(weights_path)
+        model_prediction.load_weights(weights)
 
         # summarize model.
         model_prediction.summary()
 
-        unique_id = str(uuid.uuid4())[:8]
-
-        try:
-
-            dir_tools = DirectoryTools()
-            self.output_VGGLSTM_reports = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports'))
-            self.output_VGGLSTM_reports_uuid = dir_tools.folder_creator(input_folder=os.path.join(data_folder, 'output/VGG_LSTM/reports/{}'.format(unique_id)))
-
-        except:
-
-            print("Output_folder_not_created")
-
         # --------------------------------------------------------------------------------------------------------------
+
 
         print("Getting questions batch")
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
         print("Getting images batch")
-        X_img = get_images_matrix_VGG(test_images, subset_images, data_folder, train_or_val='val')
+        X_img = get_images_matrix_VGG(subset_images, data_folder, train_or_val='val')
 
         print("Get answers batch ")
         Y_answers = get_answers_matrix(subset_answers, lbl)
 
 
+
         # --------------------------------------------------------------------------------------------------------------
         # PREDICTIONS
 
-        prediction = model_prediction.predict([X_ques, X_img], verbose=1)
-        y_classes = prediction.argmax(axis=-1)
-
+        """
         output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
 
         with tf.Session() as sess:
             result = sess.run(output)
 
         print("Top k", result)
+        
 
         # This only works with Sequential
         #prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)
 
-        for ques_id, img_id, ans_id, pred in zip(range(len(subset_questions)), range(len(subset_images)), range(len(subset_answers)), y_classes):
+        for ques_id, img_id, ans_id in zip(subset_questions, subset_images, subset_answers):
             # evaluate the model
-            print(subset_questions[ques_id], subset_images[img_id], subset_answers[ans_id], lbl.classes_[pred])
+            print(ques_id, img_id, ans_id)
+
+            print("Getting questions batch")
+            X_ques = get_questions_tensor_timeseries(ques_id, nlp, timestep)
+
+            print("Getting images batch")
+            X_img = get_images_matrix_VGG(test_images, img_id, data_folder, train_or_val='val')
+
+            prediction = model_prediction.predict([X_ques, X_img], verbose=1)
+            y_classes = prediction.argmax(axis=-1)
+
 
             top_values = [y_classes[i] for i in np.argsort(y_classes)[-5:]]
             print(top_values)
@@ -166,12 +201,14 @@ class VQA_predict(object):
             imgFilename = 'COCO_' + 'val2014' + '_' + str(subset_images[int(img_id)]).zfill(12) + '.jpg'
 
             I = io.imread(os.path.join(data_folder, 'Images/val2014/') + imgFilename)
+            plt.xticks('off')
+            plt.yticks('off')
             plt.title(subset_questions[int(ques_id)], fontdict=None, loc='center', pad=None)
-            plt.xlabel("Ground truth: " + subset_answers[int(ans_id)] + " Pred: " + lbl.classes_[pred])
+            plt.xlabel("Ground truth: " + subset_answers[int(ans_id)] + " Pred: " + lbl.classes_[y_classes])
             plt.imshow(I)
             fig1 = plt.gcf()
             plt.show()
-            figure_name = (os.path.join(self.output_VGGLSTM_reports_uuid, '{}_{}.png'.format(unique_id, img_id)))
+            figure_name = (os.path.join(self.predictions_folder, '{}_{}.png'.format(unique_id, img_id)))
             fig1.savefig(figure_name)
-
+            """
 

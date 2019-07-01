@@ -39,7 +39,7 @@ def get_images_matrix(img_coco_ids, img_map, VGGfeatures):
 	Ouput:
 	A numpy matrix of size (nb_samples, nb_dimensions)"""
 
-def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
+def get_images_matrix_VGG(img_coco_batch, data_path,
                           train_or_val='train', standarization=True, tf_pad_resize=False):
 
     #assert not isinstance(img_coco_ids, str)
@@ -52,9 +52,9 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
         if train_or_val == 'val':
 
-            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
+            for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
 
-                imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+                imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
                 I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
@@ -87,8 +87,9 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
         elif train_or_val == 'train':
 
-            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
-                imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+            for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
+
+                imgFilename = 'COCO_' + 'train2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
                 I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
 
@@ -128,8 +129,9 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
             image_matrix = []
 
-            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
-                imgFilename = 'COCO_' + 'val2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+            for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
+
+                imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
                 I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
@@ -154,8 +156,9 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
 
             image_matrix = []
 
-            for index, image_id in tqdm(zip(range(len(img_coco_batch)), img_coco_batch), total=len(img_coco_batch)):
-                imgFilename = 'COCO_' + 'train2014' + '_' + str(img_coco_subset[int(index)]).zfill(12) + '.jpg'
+            for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
+
+                imgFilename = 'COCO_' + 'train2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
                 I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
 
