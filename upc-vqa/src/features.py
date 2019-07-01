@@ -68,8 +68,6 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                     scalers = {}
 
                     try:
-                        print("Shape of RGB image:", image_resized.shape)
-
                         # Loop through all the image channels
                         for i in range(image_resized.shape[2]):
                             #Do scaling per channel
@@ -125,8 +123,6 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                     scalers = {}
 
                     try:
-                        print("Shape of RGB image:", image_resized.shape)
-
                         # Loop through all the image channels
                         for i in range(image_resized.shape[2]):
                             #Do scaling per channel
