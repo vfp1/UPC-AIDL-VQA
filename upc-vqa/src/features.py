@@ -79,6 +79,18 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                     # Some images have a fault in channels (grayscale perhaps)
                     # It gets IndexError: tuple index out of range so we pass this
                     except IndexError:
+                        print("Probably a grayscale image:", image_id)
+
+                        # Adding channel dimension to a grayscale image
+                        np.expand_dims(image_resized, axis=0)
+
+                        print("Shape of grayscale image:", image_resized.shape())
+
+                        # Loop through all the image channels
+                        for i in range(image_resized.shape[2]):
+                            # Do scaling per channel
+                            scalers[i] = StandardScaler()
+                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
 
                         image_matrix.append(image_resized)
 
@@ -86,9 +98,10 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
 
                     image_matrix.append(image_resized)
 
-
             # Resizing the shape to have the channels first as keras demands
             image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+
+
             return image_array
 
         elif train_or_val == 'train':
@@ -121,10 +134,20 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                     # Some images have a fault in channels (grayscale perhaps)
                     # It gets IndexError: tuple index out of range so we pass this
                     except IndexError:
+                        print("Probably a grayscale image:", image_id)
+
+                        # Adding channel dimension to a grayscale image
+                        np.expand_dims(image_resized, axis=0)
+
+                        print("Shape of grayscale image:", image_resized.shape())
+
+                        # Loop through all the image channels
+                        for i in range(image_resized.shape[2]):
+                            # Do scaling per channel
+                            scalers[i] = StandardScaler()
+                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
 
                         image_matrix.append(image_resized)
-
-
 
                 elif standarization is False:
 
