@@ -74,7 +74,7 @@ class VGG(object):
         return model
 
     def VGG_16_pretrained(self, input_shape=(3, 224, 224), frozen_layers=4,
-                          fine_tune_dropout=0.5, fine_tune_activation='relu'):
+                          vgg_fine_tune_dropout=0.5, vgg_fine_tune_activation='relu'):
         #
         # Nota: "th" format means that the convolutional kernels will have the shape (depth, input_depth, rows, cols)
         #       "tf" format means that the convolutional kernels will have the shape (rows, cols, input_depth, depth)
@@ -112,9 +112,9 @@ class VGG(object):
         fine_tuned = Sequential()
         fine_tuned.add(base_model)
         fine_tuned.add(Flatten())
-        fine_tuned.add(Dense(4096, activation=fine_tune_activation))
-        fine_tuned.add(Dropout(fine_tune_dropout))
-        fine_tuned.add(Dense(4096, activation=fine_tune_activation))
+        fine_tuned.add(Dense(4096, activation=vgg_fine_tune_activation))
+        fine_tuned.add(Dropout(vgg_fine_tune_dropout))
+        fine_tuned.add(Dense(4096, activation=vgg_fine_tune_activation))
 
         return fine_tuned
 

@@ -140,8 +140,8 @@ class VQA_train(object):
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
-              merge_method='concatenate', tf_crop_bool=False, image_standarization=True, finetuned_dropout=0.5,
-              finetuned_activation='relu', merged_dropout_num=0.5, merged_activation='tanh'):
+              merge_method='concatenate', tf_crop_bool=False, image_standarization=True, vgg_finetuned_dropout=0.5,
+              vgg_finetuned_activation='relu', merged_dropout_num=0.5, merged_activation='tanh'):
 
         """
         Defines the training
@@ -168,8 +168,8 @@ class VQA_train(object):
         :param merge_method: the chosen merge method, either concatenate or dot
         :param tf_crop_bool: True/False cropping the images with tensorflow (True) or scikit image (False)
         :param image_standarization: whether to do image scaling for zero mean and unit variance
-        :param finetuned_dropout: the dropout for the fine tuned VGG
-        :param finetuned_activation: the activation for the fine tuned VGG
+        :param vgg_finetuned_dropout: the dropout for the fine tuned VGG
+        :param vgg_finetuned_activation: the activation for the fine tuned VGG
         :param merged_dropout_num: the dropout for the merged part
         :param merged_activation: the activation function for the merged part
 
@@ -456,8 +456,8 @@ class VQA_train(object):
 
             elif fine_tuned is True:
                 image_model = VGG().VGG_16_pretrained(frozen_layers=vgg_frozen,
-                                                      fine_tune_dropout=finetuned_dropout,
-                                                      fine_tune_activation=finetuned_activation)
+                                                      vgg_fine_tune_dropout=vgg_finetuned_dropout,
+                                                      vgg_fine_tune_activation=vgg_finetuned_activation)
                 VGG_weights = "TRUE"
 
             print(image_model.summary())
@@ -560,8 +560,8 @@ class VQA_train(object):
                     filewriter.writerow(['Merge methods', '{}'.format(merge_method)])
                     filewriter.writerow(['Image TF Crop', '{}'.format(tf_crop_bool)])
                     filewriter.writerow(['Image Standarization', '{}'.format(image_standarization)])
-                    filewriter.writerow(['Dropout in the fine tuned VGG', '{}'.format(finetuned_dropout)])
-                    filewriter.writerow(['Activation in the fine tuned VGG', '{}'.format(finetuned_activation)])
+                    filewriter.writerow(['Dropout in the fine tuned VGG', '{}'.format(vgg_finetuned_dropout)])
+                    filewriter.writerow(['Activation in the fine tuned VGG', '{}'.format(vgg_finetuned_activation)])
                     filewriter.writerow(['Dropout in the merged model', '{}'.format(merged_dropout_num)])
                     filewriter.writerow(['Activation in the merged model', '{}'.format(merged_activation)])
 
