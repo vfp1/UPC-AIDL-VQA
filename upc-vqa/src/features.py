@@ -9,6 +9,7 @@ import random
 import skimage.io as io
 import os
 from skimage.transform import resize
+from sklearn.preprocessing import StandardScaler
 from sklearn import preprocessing
 
 import tensorflow as tf
@@ -62,10 +63,18 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
                 image_resized = resize(I, (224, 224), anti_aliasing=True)
 
                 if standarization is True:
-                    # Standarization for zero mean and unit variance
-                    image_resized_scaled = preprocessing.scale(image_resized)
 
-                    image_matrix.append(image_resized_scaled)
+                    # Standarization for zero mean and unit variance
+                    from matplotlib import pyplot as plt
+                    scalers = {}
+
+                    # Loop through all the image channels
+                    for i in range(image_resized.shape[2]):
+                        #Do scaling per channel
+                        scalers[i] = StandardScaler()
+                        image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+
+                    image_matrix.append(image_resized)
 
                 elif standarization is False:
 
@@ -88,10 +97,18 @@ def get_images_matrix_VGG(img_coco_subset, img_coco_batch, data_path,
                 image_resized = resize(I, (224, 224), anti_aliasing=True)
 
                 if standarization is True:
-                    # Standarization for zero mean and unit variance
-                    image_resized_scaled = preprocessing.scale(image_resized)
 
-                    image_matrix.append(image_resized_scaled)
+                    # Standarization for zero mean and unit variance
+                    from matplotlib import pyplot as plt
+                    scalers = {}
+
+                    # Loop through all the image channels
+                    for i in range(image_resized.shape[2]):
+                        #Do scaling per channel
+                        scalers[i] = StandardScaler()
+                        image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+
+                    image_matrix.append(image_resized)
 
                 elif standarization is False:
 
