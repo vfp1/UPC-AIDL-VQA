@@ -139,7 +139,7 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                         # Adding channel dimension to a grayscale image
                         np.expand_dims(image_resized, axis=0)
 
-                        print("Shape of grayscale image:", image_resized.shape())
+                        print("Shape of grayscale image:", image_resized.shape)
 
                         # Loop through all the image channels
                         for i in range(image_resized.shape[2]):
