@@ -82,17 +82,17 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                         print("Probably a grayscale image:", image_id)
 
                         # Adding channel dimension to a grayscale image
-                        np.expand_dims(image_resized, axis=0)
+                        stacked_img = np.stack((image_resized,)*3, axis=0)
 
-                        print("Shape of grayscale image:", image_resized.shape())
+                        print("Shape of reshaped grayscale image:", stacked_img.shape)
 
                         # Loop through all the image channels
-                        for i in range(image_resized.shape[2]):
+                        for i in range(stacked_img.shape[2]):
                             # Do scaling per channel
                             scalers[i] = StandardScaler()
-                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+                            stacked_img[:, i, :] = scalers[i].fit_transform(stacked_img[:, i, :])
 
-                        image_matrix.append(image_resized)
+                        image_matrix.append(stacked_img)
 
                 elif standarization is False:
 
