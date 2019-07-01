@@ -65,16 +65,22 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                 if standarization is True:
 
                     # Standarization for zero mean and unit variance
-                    from matplotlib import pyplot as plt
                     scalers = {}
 
-                    # Loop through all the image channels
-                    for i in range(image_resized.shape[2]):
-                        #Do scaling per channel
-                        scalers[i] = StandardScaler()
-                        image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+                    try:
+                        # Loop through all the image channels
+                        for i in range(image_resized.shape[2]):
+                            #Do scaling per channel
+                            scalers[i] = StandardScaler()
+                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
 
-                    image_matrix.append(image_resized)
+                        image_matrix.append(image_resized)
+
+                    # Some images have a fault in channels (grayscale perhaps)
+                    # It gets IndexError: tuple index out of range so we pass this
+                    except IndexError:
+
+                        image_matrix.append(image_resized)
 
                 elif standarization is False:
 
@@ -103,13 +109,22 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
                     from matplotlib import pyplot as plt
                     scalers = {}
 
-                    # Loop through all the image channels
-                    for i in range(image_resized.shape[2]):
-                        #Do scaling per channel
-                        scalers[i] = StandardScaler()
-                        image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+                    try:
+                        # Loop through all the image channels
+                        for i in range(image_resized.shape[2]):
+                            #Do scaling per channel
+                            scalers[i] = StandardScaler()
+                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
 
-                    image_matrix.append(image_resized)
+                        image_matrix.append(image_resized)
+
+                    # Some images have a fault in channels (grayscale perhaps)
+                    # It gets IndexError: tuple index out of range so we pass this
+                    except IndexError:
+
+                        image_matrix.append(image_resized)
+
+
 
                 elif standarization is False:
 
