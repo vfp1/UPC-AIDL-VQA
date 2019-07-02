@@ -139,7 +139,7 @@ class VQA_train(object):
     """
 
     def train(self, unique_id, data_folder, model_type=1, num_epochs=4, subset_size=25000, subset=False,
-              bsize=256, steps_per_epoch=20, keras_loss='categorical_crossentropy',
+              bsize=256, auto_steps_per_epoch=True, steps_per_epoch=20, keras_loss='categorical_crossentropy',
               keras_metrics='categorical_accuracy', learning_rate=0.01,
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
@@ -157,6 +157,7 @@ class VQA_train(object):
         :param subset_size: the subset size of VQA dataset, recommended 25000 by default
         :param subset: whether to subset the dataset or not
         :param bsize: the batch size, default at 256
+        :prarm auto_steps_per_epoch: automated steps per epoch counter to adjust number samples/number batch
         :param steps_per_epoch: the steps for each epoch
         :param keras_loss: the chosen keras loss
         :param keras_metrics: the chosen keras metrics
@@ -576,6 +577,12 @@ class VQA_train(object):
                     filewriter.writerow(['Activation in the merged model', '{}'.format(merged_activation)])
                     filewriter.writerow(['Batch normalization fine tuned', '{}'.format(finetuned_batchnorm)])
                     filewriter.writerow(['Batch normalization merged model', '{}'.format(merged_batchnorm)])
+                    
+                    if auto_steps_per_epoch is True:
+                        filewriter.writerow(['Steps per epoch', '{}'.format((np.ceil(len(subset_images) / float(batch_size))).astype(np.int))])
+                    elif auto_steps_per_epoch is False:
+                        filewriter.writerow(['Steps per epoch', '{}'.format(steps_per_epoch)])
+
 
 
             except:
@@ -682,8 +689,19 @@ class VQA_train(object):
          
 
             try:
+
+                if auto_steps_per_epoch is True:
+
+                    epoch_steps = (np.ceil(len(subset_images) / float(batch_size))).astype(np.int)
+
+                elif auto_steps_per_epoch is False:
+
+                    epoch_steps = steps_per_epoch
+
+
+
                 history = final_model.fit_generator(generator=train_batch_generator,
-                                                    steps_per_epoch=steps_per_epoch,
+                                                    steps_per_epoch=epoch_steps,
                                                     epochs=num_epochs,
                                                     verbose=2,
                                                     validation_data=validation_batch_generator,
@@ -723,8 +741,16 @@ class VQA_train(object):
 
             except:
 
+                if auto_steps_per_epoch is True:
+
+                    epoch_steps = (np.ceil(len(subset_images) / float(batch_size))).astype(np.int)
+
+                elif auto_steps_per_epoch is False:
+
+                    epoch_steps = steps_per_epoch
+
                 history = final_model.fit_generator(generator=train_batch_generator,
-                                                    steps_per_epoch=steps_per_epoch,
+                                                    steps_per_epoch=epoch_steps,
                                                     epochs=num_epochs,
                                                     verbose=2,
                                                     validation_data=validation_batch_generator,

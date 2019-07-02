@@ -115,13 +115,13 @@ class VGG(object):
         fine_tuned.add(Flatten())
         fine_tuned.add(Dense(4096, activation=vgg_fine_tune_activation))
         if batch_norm is True:
-            fine_tuned.add(BatchNormalization)
+            fine_tuned.add(BatchNormalization())
         elif batch_norm is False:
             pass
         fine_tuned.add(Dropout(vgg_fine_tune_dropout))
         fine_tuned.add(Dense(4096, activation=vgg_fine_tune_activation))
         if batch_norm is True:
-            fine_tuned.add(BatchNormalization)
+            fine_tuned.add(BatchNormalization())
         elif batch_norm is False:
             pass
 
