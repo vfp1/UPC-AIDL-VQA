@@ -154,7 +154,7 @@ class VQA_predict(object):
 
         # --------------------------------------------------------------------------------------------------------------
 
-
+        """
         print("Getting questions batch")
         X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
 
@@ -163,12 +163,12 @@ class VQA_predict(object):
 
         print("Get answers batch ")
         Y_answers = get_answers_matrix(subset_answers, lbl)
+        """
 
 
 
         # --------------------------------------------------------------------------------------------------------------
         # PREDICTIONS
-
         """
         output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
 
@@ -176,6 +176,7 @@ class VQA_predict(object):
             result = sess.run(output)
 
         print("Top k", result)
+        """
         
 
         # This only works with Sequential
@@ -186,29 +187,40 @@ class VQA_predict(object):
             print(ques_id, img_id, ans_id)
 
             print("Getting questions batch")
-            X_ques = get_questions_tensor_timeseries(ques_id, nlp, timestep)
+            X_ques = get_questions_tensor_timeseries_predict(ques_id, nlp, timestep)
 
             print("Getting images batch")
-            X_img = get_images_matrix_VGG(test_images, img_id, data_folder, train_or_val='val')
+            X_img = get_images_matrix_VGG(img_id, data_folder, train_or_val='val')
+
+            print("Get answers batch ")
+            Y_answers = get_answers_matrix_prediction(ans_id, lbl)
+
+            print(X_ques.shape, X_img.shape, Y_answers.shape)
 
             prediction = model_prediction.predict([X_ques, X_img], verbose=1)
             y_classes = prediction.argmax(axis=-1)
+
+            output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
+
+            with tf.Session() as sess:
+                result = sess.run(output)
+
+            print("Top k", result)
 
 
             top_values = [y_classes[i] for i in np.argsort(y_classes)[-5:]]
             print(top_values)
 
-            imgFilename = 'COCO_' + 'val2014' + '_' + str(subset_images[int(img_id)]).zfill(12) + '.jpg'
+            imgFilename = 'COCO_' + 'val2014' + '_' + str(img_id).zfill(12) + '.jpg'
 
             I = io.imread(os.path.join(data_folder, 'Images/val2014/') + imgFilename)
-            plt.xticks('off')
-            plt.yticks('off')
-            plt.title(subset_questions[int(ques_id)], fontdict=None, loc='center', pad=None)
-            plt.xlabel("Ground truth: " + subset_answers[int(ans_id)] + " Pred: " + lbl.classes_[y_classes])
+            plt.title(ques_id, fontdict=None, loc='center', pad=None)
+
+            plt.xlabel("Ground truth: " + str(ans_id) + " Pred: " + str(''.join(lbl.classes_[y_classes])))
             plt.imshow(I)
             fig1 = plt.gcf()
             plt.show()
             figure_name = (os.path.join(self.predictions_folder, '{}_{}.png'.format(unique_id, img_id)))
             fig1.savefig(figure_name)
-            """
+
 

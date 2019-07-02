@@ -52,57 +52,112 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
 
         if train_or_val == 'val':
 
-            for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
+            if len([img_coco_batch]) == 1:
 
-                imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
+                for image_id in tqdm([img_coco_batch], total=len([img_coco_batch])):
 
-                I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
+                    imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
-                # Resize images to fit in VGG matrix
-                # TODO: not optimal, find ways to pass whole image (padding)
-                image_resized = resize(I, (224, 224), anti_aliasing=True)
+                    I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
 
-                if standarization is True:
+                    # Resize images to fit in VGG matrix
+                    # TODO: not optimal, find ways to pass whole image (padding)
+                    image_resized = resize(I, (224, 224), anti_aliasing=True)
 
-                    # Standarization for zero mean and unit variance
-                    scalers = {}
+                    if standarization is True:
 
-                    try:
-                        # Loop through all the image channels
-                        for i in range(image_resized.shape[2]):
-                            #Do scaling per channel
-                            scalers[i] = StandardScaler()
-                            image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+                        # Standarization for zero mean and unit variance
+                        scalers = {}
+
+                        try:
+                            # Loop through all the image channels
+                            for i in range(image_resized.shape[2]):
+                                #Do scaling per channel
+                                scalers[i] = StandardScaler()
+                                image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+
+                            image_matrix.append(image_resized)
+
+                        # Some images have a fault in channels (grayscale perhaps)
+                        # It gets IndexError: tuple index out of range so we pass this
+                        except IndexError:
+                            print("Probably a grayscale image:", image_id)
+
+                            # Adding channel dimension to a grayscale image
+                            stacked_img = np.stack((image_resized,)*3, axis=-1)
+
+                            print("Shape of reshaped grayscale image:", stacked_img.shape)
+
+                            # Loop through all the image channels
+                            for i in range(stacked_img.shape[2]):
+                                # Do scaling per channel
+                                scalers[i] = StandardScaler()
+                                stacked_img[:, i, :] = scalers[i].fit_transform(stacked_img[:, i, :])
+
+                            image_matrix.append(stacked_img)
+
+                    elif standarization is False:
 
                         image_matrix.append(image_resized)
 
-                    # Some images have a fault in channels (grayscale perhaps)
-                    # It gets IndexError: tuple index out of range so we pass this
-                    except IndexError:
-                        print("Probably a grayscale image:", image_id)
-
-                        # Adding channel dimension to a grayscale image
-                        stacked_img = np.stack((image_resized,)*3, axis=-1)
-
-                        print("Shape of reshaped grayscale image:", stacked_img.shape)
-
-                        # Loop through all the image channels
-                        for i in range(stacked_img.shape[2]):
-                            # Do scaling per channel
-                            scalers[i] = StandardScaler()
-                            stacked_img[:, i, :] = scalers[i].fit_transform(stacked_img[:, i, :])
-
-                        image_matrix.append(stacked_img)
-
-                elif standarization is False:
-
-                    image_matrix.append(image_resized)
-
-            # Resizing the shape to have the channels first as keras demands
-            image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+                # Resizing the shape to have the channels first as keras demands
+                image_array = np.rollaxis(np.array(image_matrix), 3, 1)
 
 
-            return image_array
+                return image_array
+
+            elif len([img_coco_batch]) > 1:
+
+                for image_id in tqdm([img_coco_batch], total=len([img_coco_batch])):
+
+                    imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
+
+                    I = io.imread(os.path.join(data_path, 'Images/val2014/') + imgFilename)
+
+                    # Resize images to fit in VGG matrix
+                    # TODO: not optimal, find ways to pass whole image (padding)
+                    image_resized = resize(I, (224, 224), anti_aliasing=True)
+
+                    if standarization is True:
+
+                        # Standarization for zero mean and unit variance
+                        scalers = {}
+
+                        try:
+                            # Loop through all the image channels
+                            for i in range(image_resized.shape[2]):
+                                # Do scaling per channel
+                                scalers[i] = StandardScaler()
+                                image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+
+                            image_matrix.append(image_resized)
+
+                        # Some images have a fault in channels (grayscale perhaps)
+                        # It gets IndexError: tuple index out of range so we pass this
+                        except IndexError:
+                            print("Probably a grayscale image:", image_id)
+
+                            # Adding channel dimension to a grayscale image
+                            stacked_img = np.stack((image_resized,) * 3, axis=-1)
+
+                            print("Shape of reshaped grayscale image:", stacked_img.shape)
+
+                            # Loop through all the image channels
+                            for i in range(stacked_img.shape[2]):
+                                # Do scaling per channel
+                                scalers[i] = StandardScaler()
+                                stacked_img[:, i, :] = scalers[i].fit_transform(stacked_img[:, i, :])
+
+                            image_matrix.append(stacked_img)
+
+                    elif standarization is False:
+
+                        image_matrix.append(image_resized)
+
+                # Resizing the shape to have the channels first as keras demands
+                image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+
+                return image_array
 
         elif train_or_val == 'train':
 
@@ -222,7 +277,7 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
 A numpy array of shape: (nb_samples, word_vec_dim)"""
 
 def get_questions_matrix(questions, nlp):
-    assert not isinstance(questions, str)
+    #assert not isinstance(questions, str)
     nb_samples = len(questions)
     word_vec_dim = nlp(questions[0])[0].vector.shape[0]
     questions_matrix = np.zeros((nb_samples, word_vec_dim))
@@ -245,6 +300,13 @@ def get_answers_matrix(answers, encoder):
     Y = np_utils.to_categorical(y, nb_classes)
     return Y
 
+def get_answers_matrix_prediction(answers, encoder):
+    #assert not isinstance(answers, str)
+    y = encoder.transform([answers]) #string to numerical class
+    nb_classes = encoder.classes_.shape[0]
+    Y = np_utils.to_categorical(y, nb_classes)
+    return Y
+
 def get_answers_sum(answers, encoder):
     #assert not isinstance(answers, str)
     y = encoder.transform(answers)
@@ -261,6 +323,18 @@ def get_questions_tensor_timeseries(questions, nlp, timesteps):
     word_vec_dim = nlp(questions[0])[0].vector.shape[0]
     questions_tensor = np.zeros((nb_samples, timesteps, word_vec_dim))
     for i in range(len(questions)):
+        tokens = nlp(questions[i])
+        for j in range(len(tokens)):
+            if j<timesteps:
+                questions_tensor[i,j,:] = tokens[j].vector
+    return questions_tensor
+
+def get_questions_tensor_timeseries_predict(questions, nlp, timesteps):
+    #assert not isinstance(questions, str)
+    nb_samples = len([questions])
+    word_vec_dim = nlp(questions[0])[0].vector.shape[0]
+    questions_tensor = np.zeros((nb_samples, timesteps, word_vec_dim))
+    for i in range(len([questions])):
         tokens = nlp(questions[i])
         for j in range(len(tokens)):
             if j<timesteps:
