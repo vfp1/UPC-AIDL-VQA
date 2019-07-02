@@ -577,7 +577,7 @@ class VQA_train(object):
                     filewriter.writerow(['Activation in the merged model', '{}'.format(merged_activation)])
                     filewriter.writerow(['Batch normalization fine tuned', '{}'.format(finetuned_batchnorm)])
                     filewriter.writerow(['Batch normalization merged model', '{}'.format(merged_batchnorm)])
-                    
+
                     if auto_steps_per_epoch is True:
                         filewriter.writerow(['Steps per epoch', '{}'.format((np.ceil(len(subset_images) / float(batch_size))).astype(np.int))])
                     elif auto_steps_per_epoch is False:
