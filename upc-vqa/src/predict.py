@@ -24,6 +24,7 @@ import pickle as pk
 
 import matplotlib.pyplot as plt
 
+
 class VQA_predict(object):
     """
     Evaluation class for the VQA
@@ -31,12 +32,10 @@ class VQA_predict(object):
 
     def prediction(self, data_folder, time_and_uuid, subset_size=1, model_type=2):
         """
-
         :param data_folder: the folder to the VQA data
         :param time_and_uuid: the weights associated with that model
         :param subset_size: the amount of predicts to do
         :param model_type: the type of model, 1= MLP_LSTM, 2=VGG_LSTM
-
         :return: the final accuracy for the model
         """
 
@@ -72,7 +71,7 @@ class VQA_predict(object):
             dir_tools = DirectoryTools()
             self.predictions_folder = dir_tools.folder_creator(input_folder=os.path.join(results_folder, 'predictions'))
 
-        #VGG_LSTM
+        # VGG_LSTM
         elif model_type == 2:
 
             results_folder = os.path.join(data_folder, 'output/VGG_LSTM/reports/{}'.format(time_and_uuid))
@@ -93,12 +92,14 @@ class VQA_predict(object):
         upper_lim = 1000
 
         # Loading most frequent occurring answers
-        test_questions_f, test_answers_f, test_images_f = freq_answers(test_questions, test_answers, test_images, upper_lim)
+        test_questions_f, test_answers_f, test_images_f = freq_answers(test_questions, test_answers, test_images,
+                                                                       upper_lim)
 
-        test_questions_len, test_questions, test_answers, test_images = (list(t) for t in zip(*sorted(zip(test_questions_len,
-                                                                                                          test_questions_f,
-                                                                                                          test_answers_f,
-                                                                                                          test_images_f))))
+        test_questions_len, test_questions, test_answers, test_images = (list(t) for t in
+                                                                         zip(*sorted(zip(test_questions_len,
+                                                                                         test_questions_f,
+                                                                                         test_answers_f,
+                                                                                         test_images_f))))
 
         # Creating subset
         subset_questions = []
@@ -138,7 +139,7 @@ class VQA_predict(object):
         lbl.fit(test_answers)
         nb_classes = len(list(lbl.classes_))
         print("Number of classes:", nb_classes)
-        pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"),'wb'))
+        pk.dump(lbl, open(os.path.join(data_folder, "output/label_encoder_lstm.sav"), 'wb'))
 
         timestep = len(nlp(subset_questions[-1]))
 
@@ -154,33 +155,8 @@ class VQA_predict(object):
 
         # --------------------------------------------------------------------------------------------------------------
 
-        """
-        print("Getting questions batch")
-        X_ques = get_questions_tensor_timeseries(subset_questions, nlp, timestep)
-
-        print("Getting images batch")
-        X_img = get_images_matrix_VGG(subset_images, data_folder, train_or_val='val')
-
-        print("Get answers batch ")
-        Y_answers = get_answers_matrix(subset_answers, lbl)
-        """
-
-
-
-        # --------------------------------------------------------------------------------------------------------------
-        # PREDICTIONS
-        """
-        output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
-
-        with tf.Session() as sess:
-            result = sess.run(output)
-
-        print("Top k", result)
-        """
-        
-
         # This only works with Sequential
-        #prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)
+        # prediction = model_prediction.predict_classes([X_ques, X_img], verbose=1, batch_size=1)
 
         for ques_id, img_id, ans_id in zip(subset_questions, subset_images, subset_answers):
             # evaluate the model
@@ -195,7 +171,9 @@ class VQA_predict(object):
             print("Get answers batch ")
             Y_answers = get_answers_matrix_prediction(ans_id, lbl)
 
-            print(X_ques.shape, X_img.shape, Y_answers.shape)
+            print(X_ques.shape)
+            print(X_img.shape)
+            print(Y_answers.shape)
 
             prediction = model_prediction.predict([X_ques, X_img], verbose=1)
             y_classes = prediction.argmax(axis=-1)
@@ -206,7 +184,6 @@ class VQA_predict(object):
                 result = sess.run(output)
 
             print("Top k", result)
-
 
             top_values = [y_classes[i] for i in np.argsort(y_classes)[-5:]]
             print(top_values)
@@ -222,5 +199,3 @@ class VQA_predict(object):
             plt.show()
             figure_name = (os.path.join(self.predictions_folder, '{}_{}.png'.format(unique_id, img_id)))
             fig1.savefig(figure_name)
-
-
