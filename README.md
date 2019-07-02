@@ -1,38 +1,185 @@
 # UPC-AIDL-VQA
+
 An attempt to address the VQA challenge for the Artificial Intelligence for Deep Learning postgraduate
 
-## Legacy
-This project derives from previous attempts on addressing VQA. Following there is a list of legacy code:
+## GROUP MEMBERS
+* Elena Alonso
+* David Valls
+* Hector Cano
+* Victor Pajuelo
+* Francesc Guimera
 
-* [VQA helpers adapted to Python 3.5](https://github.com/vfp1/VQA)
+## EXECUTION/TEST LOG
+Find the execution/test logs with comments at *report/experiments.xlsx*
 
-## Installers
-This repository needs the installing of a package contain within it. Install it in your environment following
-the following instructions.
+## INTRODUCTION
 
-### English model from Spacy
+### VQA CHALLENGE- definición
 
-```python
-python -m spacy download en
-```
+The Visual Question Answering (VQA) Challenge is a task in machine learning where given an image and a natural language question about the image, the trained system provides an accurate natural language answer to the question. The goal is to be able to understand the semantics of scenes well enough to be able to answer open-ended, free-form natural language questions (asked by humans) about images.
 
-### Ngrok installation
-```bash
-!wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-!unzip ngrok-stable-linux-amd64.zip
-```
+The aim of the project developed at AIDL2019 IA with ML team is to design and build a model that is able to perform his task.
 
-#### Preparing the datasets
-The datasets are given as in the [VQA Challenge](https://visualqa.org/download.html). Those are uploaded to a Google Drive 
-link, which will not be posted publicly here. However, those are zipped. To unzip, do the following after **vqaHelpers** installation. 
-Grab a cup of coffe, it will take quite a while, it is **30GB** after all:
+The VQA Challenge provides a train, validation and test sets, containing more than 250K images and 1.1M questions. The questions are annotated with 10 concise, open-ended answers each. Annotations on the training and validation sets are publicly available. This datasets will be used to trains and develop the model developed that is the target of this project.
 
-``` python
-from vqaHelpers import vqaIngestion
-# Path to the root folder of the Google Drive data
-path = r"G:\My Drive\Studies\UPC-AIDL\VQA\data"
+### VQA – ELEMENTS
 
-# Unzip the Images
-vqaIngestion.VQADataset().imageUnzip(path)
-```
+The Visual Question Answering (VQA) problems require the model to understand a text-based question, identify elements of an image, and evaluate how these two inputs relate to one another. Much of the progress in VQA parallels developments made in other problems, such as image captioning and textual question answering.
 
+Several models in deep learning have been developed ton combine computer vision components with NLP components in order to solve the VQA Challenge.
+
+These models fit a particular design paradigm, with modules for question encoding, image feature extraction, fusion of the two (that could be powered with attention mechanisms) to finish with a classification task over the space of answer(s).
+
+### IA TOOLS TO APPROACH VQA
+
+The method to approach VQA tasks then is based on three subcomponents: 
+
+* Image Representations: creating representations for the image and question.
+* A Neural Network, to pass these representations through it, in order to create a co-dependent embedding;
+* Natural language answer generation by means of the use of a typical NLP processing path (tokenization and word-embedding)
+
+Finally both parts converge in one by concatenate it, and then the result is trained as an ensemble.
+
+## THE FIRST MODEL
+
+### DEVELOP ENVIRONMENT AND LIBS SUMMARY
+
+First, we will make a brief description of the environment used to develop, test and run the models.
+
+Two different kinds of environments has been used, on the idea to save the scarce computational resources on Google Cloud as much as possible for the with complete dataset model trains and final model tweaking.
+
+The Develop tasks and first trail runs (few epochs just to see run ability and debug errors) of each model have been done on a laptop machine with Ubuntu 18.0 and TF/KERAS/PYTHON 3.0. TensorFlow was compiled for the use of the internal GPU NVIDIA provided on this Laptop.
+
+At the beginning, due to GPU’s memory problems the Dataset used was a reduced subset of the original ones only containing a small sample of each of VQA datasets, normally 10.000 images (the size of the batch images can be selected at model by means of a predefined variable). After find the `fit_generator` and  `batch_generator` solution full dataset model has been trained.
+
+Once model is able to run smooth and gives some (usually trashy) results, then the model is passed on Google Cloud environment to take advantage of the available machine and GPU. Once again the approach is to text the model for a few epochs and small dataset, in order to see everything runs well here, and then trained with the full dataset.
+
+This approach has been keep for the dimensional changes of model (number and width of layers, etc.) at the first improvements tests.
+
+With the final model defined, latest tweaks and improvements has been test on Google Cloud Machine.
+
+### LIBRARYS USED
+
+To help on manage data, prepare it, or plot the results, different libraries had been used when developing the models. It is possible to distinguish three types or areas on behalf of the use of the library.
+
+There is a list and short description of the use of each:
+
+1. DATA INGESTION and DATASET BUILD UP and PREPROCESSING.
+
+    * Datetime: for date and time purposes.
+    * Sys, warnings: Interact with OS and manage warning cue.
+    * Random: Python Lib. That generated a random seed that will be used later to initialize the weights of the network layers
+        * From random import shuffle, sample.
+    * vqaHelpers: Custom made lib that has been adapted to run under Python3 with functions implemented to pre-process COCO images and put the relation between an image, his ground truth and corresponding label on a .txt file as a vector so they can be feeded onto the batch generator.
+
+    * Pickle: the pickle lib. implements binary protocols for serializing (flattening) and de-serializing (de-flattening) a Python object structure.
+    * GC: Generational garbage collector, to free memory from Python unused objects.
+    * Os: The Os module provides a way of using operating system dependent functionalities.
+    * numpy: NumPy is the fundamental package for scientific computing with Python and can also be used as an efficient multi-dimensional container of generic data. 
+    * Pandas: Pandas is an open library providing data structures and data analysis tools for Python programming language.
+    * Scipy: The SciPy library provides many numerical routines as for numerical integration, interpolation, optimization, linear algebra and statistics.
+    * Src: used as a rood folder for all our function.
+    * Utils: This module makes it easy to execute common tasks in Python scripts such as converting text to numbers and making sure a string is in unicode or bytes format.
+
+2. KERAS LIBRARIES (define and fit model )
+    * from keras.models import Sequential
+    * from keras.models import Model
+    * from keras.layers.core import Dense, Dropout, Activation, Reshape
+    * from keras.layers.recurrent import LSTM
+    * from keras.layers.merge import Concatenate: used to make the union between the image learning branch and the NLP branch. One of the experiments will consist in change the concatenate by a dot product, as suggested by our teacher.
+    * progressbar: A Python Progressbar library to provide visual text based progress to long running operations.
+    * from sklearn.preprocessing import LabelEncoder: Encode labels with value between 0 and n-1 (when n= number of classes).
+    * from keras.utils import plot_model
+    * from keras.utils import Sequence
+    * from keras.callbacks import TensorBoard: The use of the Keras callbacks to plot the accuracy and loss curves by using Tensorboard application.
+    * Models: self-made class with the definition and implementation of the layers of the models trained by the team. The parameters and dimensions of the model are  passed from a script
+    * from keras.models import model_from_json: used to be able to recover net models that are defined in class “models”
+
+3. PLOT LIBRARIES
+    * SpaCy: spaCy is a Lib. to prepare text for deep learning. It can easily construct statistical models for a variety of NLP problems.
+    * Try: Implements the exception handler, in case anything goes wrong.
+    * Features: own implemented class with a set of functions that build the tensors to be trained.
+    * Graphviz;  This package facilitates the creation and rendering of graph descriptions in the DOT language of the Graphviz graph drawing software from Python.
+    * Pydot: Is an interface to Graphviz and can parse and dump into the DOT language used by GraphViz.
+    * Sklearn: refere to scikit instead. Used to split the train set.
+    * skimage: the Scikit-image library is a collection of algorithms for image processing.
+
+### DEVELOP FIRSTS STEPS AND TROUBLES
+
+Once the draft of the first model is done, both by looking at VQA paper as well as by looking for some available previous models out there, and as soon as we made the firsts attempts to run it, first troubles appear when dealing with dataset to charge it and when running due to inconsistency of the subsets and some libraries dependences and data format incompatibilities.
+
+To introduce the images on our first model based on FCC input layer, We do unroll the images by using the `layer.flatten` Keras tool.
+
+*VGG* - This problem was fixed when after debugging all the process (something that was difficult because it worked with a small dataset well but suddenly give us an error when try was done using more images
+
+### REPRESENTATIVE SUBSET AND BIASED OR WRONG SUBSET SELECTION
+
+Reduction of training sets is necessary due to VQA datasets are huge. The use of all COCO dataset when training models start gives us a GPU memory overflow problem, data occupying all the available memory with the training not able to finish and suddenly come over.
+
+Using fit_generator instruction in Keras to avoid this, was only to discover that the long time required to trains the whole dataset became our next bottleneck and we’re run out of time so we decide to move on small training dataset or subset.
+
+We can define a representative subset of the original dataset COCO, which (should) satisfies three main characteristics:
+
+1. It is smaller in size compared to the original dataset.
+2. It captures the most of information from the original dataset compared to any subset of the same size.
+3. It has low redundancy among the representatives it contains.
+
+When doing this we should be aware to select a good one subset by taking a number of samples of random, representative and non biased data. We should also removing our data from repetitive behavior by shuffling it, in order to avoid repetitive behaviours of the loss values.
+
+![repetitive behaviours of the loss valuesAlt text](images/loss.png?raw=true "repetitive behaviours of the loss values")
+
+By doing this the subset data should ensure to avoid selection bias. Selection bias occurs when the samples used to produce the model are not fully representative of cases that the model may be used for in the future, particularly with new and unseen data.
+
+After the subset is done We have to split it and use available data to perform the tasks of training, validation and testing where:
+
+* Training set: is a set used for learning and estimating parameters of the model.
+* Validation set: is a set used to evaluate the model, usually for model selection.
+* Evaluation (testing) set: is a set of examples used to assess the predictive performance of the model.
+
+Finally the used subset is of 25.000 Images (with Ground Truth and text Labels) for Train (80%) and Validation (20%) sets.
+
+## BASIC MODEL
+
+### MODEL PROPOSAL
+
+Our proposed model (Figure 1) derives inspiration from the winning architecture developed by Teney et al. for the 2017 VQA Challenge. The model implements a joint LSTM/FCC for question and image embeddings, respectively.
+
+It then uses top-down attention, guided by the question embedding, on the image embeddings. The model inputs are pre-processed by means of the aforementioned libraries in order to be able for the model to swallow it.
+
+Model is divided into 3 different parts, each one related to one functional area of the task.
+
+The first one is the part dedicated to the data ingestion that means to collect the training, test and validation datasets from is location, pick the data up from these datasets, and re-ordering and prepare it in order to be suitable for the model to process it.
+
+First difficulty for the team appears here, as the library vqaHelpers referred on models available from previous years, has been done in Python 2, instead of the Python 3 used here.
+
+The image feature vectors along with this question embedding of size number-of-hidden-units (1280) are then pass into FCC layers while Question Inputs are tokenized and represented using word embedding by using the pretrained word2vec from Google and feeded onto an LSTM stack of layers. Then both branches are concatenated and the full ensemble is trained togheter.
+
+### BASIC MODEL
+
+The first attempt to solve VQA and get something usable was a network composed by an MLP FCC for image processing and LSTM’s for NLP, and looks like this:
+      Models and script to call them and pass the parameterers are located on.
+
+RESULTS (ACCURACY AND LOSS PLOTS)
+
+For plotting curves refer to excel file at____________________
+
+## BASIC MODEL ARCHITECTURE VARIATIONS.
+
+### MODEL LSTM+VGG
+
+The first variation, as suggested by our team supervisor and logical first step is to change the FCC branch to do the images learning by a more appropriate and natural model of CNN, a VGG – 16 in this case. 
+
+With this change, model looks as :
+
+![LSTM-VGG](images/model_LSTM-VGG.png?raw=true "LSTM-VGG")
+![LSTM-VGG](images/model_LSTM-VGGb.png?raw=true "LSTM-VGG")
+
+## MODEL COMPARISON
+
+### COMPARATIVE CHARTS OF MODELS AND RESULTS
+
+### COMPUTATIONAL COST OF MODELS
+
+### CONCLUSIONS (PRODUCTION PORTABILITY, HARDWARE RESOURCES)
+
+## CONCLUSIONS
