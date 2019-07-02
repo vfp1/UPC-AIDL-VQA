@@ -161,8 +161,6 @@ The first attempt to solve VQA and get something usable was a network composed b
 
 RESULTS (ACCURACY AND LOSS PLOTS)
 
-For plotting curves refer to excel file at____________________
-
 ## BASIC MODEL ARCHITECTURE VARIATIONS.
 
 ### MODEL LSTM+VGG
@@ -176,10 +174,3 @@ With this change, model looks as :
 
 ## MODEL COMPARISON
 
-### COMPARATIVE CHARTS OF MODELS AND RESULTS
-
-### COMPUTATIONAL COST OF MODELS
-
-### CONCLUSIONS (PRODUCTION PORTABILITY, HARDWARE RESOURCES)
-
-## CONCLUSIONS
