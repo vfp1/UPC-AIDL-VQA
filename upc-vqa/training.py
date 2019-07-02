@@ -33,7 +33,8 @@ try:
                             lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
                             merge_method='concatenate', tf_crop_bool=False, image_standarization=True,
                             vgg_finetuned_dropout=0.5, vgg_finetuned_activation='relu',
-                            merged_dropout_num=0.5, merged_activation='tanh')
+                            merged_dropout_num=0.5, merged_activation='tanh',
+                            finetuned_batchnorm=True, merged_batchnorm=True)
 
 except:
 
@@ -47,4 +48,5 @@ except:
                             lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
                             merge_method='concatenate', tf_crop_bool=False, image_standarization=True,
                             vgg_finetuned_dropout=0.5, vgg_finetuned_activation='relu',
-                            merged_dropout_num=0.5, merged_activation='tanh')
+                            merged_dropout_num=0.5, merged_activation='tanh',
+                            finetuned_batchnorm=True, merged_batchnorm=True)

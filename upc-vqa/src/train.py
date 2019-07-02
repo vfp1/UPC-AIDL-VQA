@@ -19,6 +19,7 @@ import scipy.io
 from keras.models import Sequential, Model
 from keras.layers import concatenate, multiply
 from keras.layers.core import Dense, Dropout, Activation, Reshape
+from keras.layers.normalization import BatchNormalization
 from keras.layers.recurrent import LSTM
 from keras.layers.merge import Concatenate
 from keras.optimizers import RMSprop
@@ -143,7 +144,8 @@ class VQA_train(object):
               optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
               lstm_hidden_nodes=512, lstm_num_layers=3, fc_hidden_nodes=1024, fc_num_layers=3,
               merge_method='concatenate', tf_crop_bool=False, image_standarization=True, vgg_finetuned_dropout=0.5,
-              vgg_finetuned_activation='relu', merged_dropout_num=0.5, merged_activation='tanh'):
+              vgg_finetuned_activation='relu', merged_dropout_num=0.5, merged_activation='tanh',
+              finetuned_batchnorm=True, merged_batchnorm=True):
 
         """
         Defines the training
@@ -174,6 +176,8 @@ class VQA_train(object):
         :param vgg_finetuned_activation: the activation for the fine tuned VGG
         :param merged_dropout_num: the dropout for the merged part
         :param merged_activation: the activation function for the merged part
+        :param finetuned_batchnorm: the batchnorm for the fine tuned part
+        :param merged_batchnorm: the batchnorm for the merged part
 
         :return: the VQA train
         """
@@ -450,7 +454,6 @@ class VQA_train(object):
             # This is the VGG model 
             
             image_model = Sequential()
-            #TODO: fix h5py load issue OSError: Unable to open file (file signature not found)
 
             if fine_tuned is False:
                 image_model = VGG().VGG_16()
@@ -459,7 +462,8 @@ class VQA_train(object):
             elif fine_tuned is True:
                 image_model = VGG().VGG_16_pretrained(frozen_layers=vgg_frozen,
                                                       vgg_fine_tune_dropout=vgg_finetuned_dropout,
-                                                      vgg_fine_tune_activation=vgg_finetuned_activation)
+                                                      vgg_fine_tune_activation=vgg_finetuned_activation,
+                                                      batch_norm=finetuned_batchnorm)
                 VGG_weights = "TRUE"
 
             print(image_model.summary())
@@ -492,6 +496,10 @@ class VQA_train(object):
 
                 x = Dense(num_hidden_nodes_mlp, init='uniform')(x)
                 x = Activation(merged_activation)(x)
+                if merged_batchnorm is True:
+                    x = BatchNormalization()(x)
+                elif merged_batchnorm is False:
+                    pass
                 x = Dropout(merged_dropout_num)(x)
 
             x = Dense(upper_lim)(x)
