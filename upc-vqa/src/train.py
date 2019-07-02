@@ -574,6 +574,8 @@ class VQA_train(object):
                     filewriter.writerow(['Activation in the fine tuned VGG', '{}'.format(vgg_finetuned_activation)])
                     filewriter.writerow(['Dropout in the merged model', '{}'.format(merged_dropout_num)])
                     filewriter.writerow(['Activation in the merged model', '{}'.format(merged_activation)])
+                    filewriter.writerow(['Batch normalization fine tuned', '{}'.format(finetuned_batchnorm)])
+                    filewriter.writerow(['Batch normalization merged model', '{}'.format(merged_batchnorm)])
 
 
             except:
