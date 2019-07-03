@@ -52,9 +52,11 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
 
         if train_or_val == 'val':
 
-            if len([img_coco_batch]) == 1:
+            if len(img_coco_batch) == 1:
+                print("Here")
+                print(len(img_coco_batch))
 
-                for image_id in tqdm([img_coco_batch], total=len([img_coco_batch])):
+                for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
 
                     imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
 
@@ -106,9 +108,11 @@ def get_images_matrix_VGG(img_coco_batch, data_path,
 
                 return image_array
 
-            elif len([img_coco_batch]) > 1:
+            elif len(img_coco_batch) > 1:
+                print("Here here")
+                print(len(img_coco_batch))
 
-                for image_id in tqdm([img_coco_batch], total=len([img_coco_batch])):
+                for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
 
                     imgFilename = 'COCO_' + 'val2014' + '_' + str(image_id).zfill(12) + '.jpg'
 

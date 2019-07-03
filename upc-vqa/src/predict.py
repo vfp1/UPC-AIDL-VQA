@@ -153,6 +153,7 @@ class VQA_predict(object):
         # summarize model.
         model_prediction.summary()
 
+
         # --------------------------------------------------------------------------------------------------------------
 
         # This only works with Sequential
@@ -163,20 +164,22 @@ class VQA_predict(object):
             print(ques_id, img_id, ans_id)
 
             print("Getting questions batch")
-            X_ques = get_questions_tensor_timeseries_predict(ques_id, nlp, timestep)
+            # Pass img id as a list so that the for loop in features.py does not loop through string items
+            X_ques = get_questions_tensor_timeseries_predict([ques_id], nlp, timestep)
 
             print("Getting images batch")
-            X_img = get_images_matrix_VGG(img_id, data_folder, train_or_val='val')
+            # Pass img id as a list so that the for loop in features.py does not loop through string items
+            X_img = get_images_matrix_VGG([img_id], data_folder, train_or_val='val')
 
             print("Get answers batch ")
-            Y_answers = get_answers_matrix_prediction(ans_id, lbl)
-
-            print(X_ques.shape)
-            print(X_img.shape)
-            print(Y_answers.shape)
+            # Pass img id as a list so that the for loop in features.py does not loop through string items
+            Y_answers = get_answers_matrix_prediction([ans_id], lbl)
 
             prediction = model_prediction.predict([X_ques, X_img], verbose=1)
             y_classes = prediction.argmax(axis=-1)
+
+            #idx = (prediction).argsort()[:5]
+            #print(idx)
 
             output = tf.keras.metrics.top_k_categorical_accuracy(Y_answers, prediction, k=10)
 
@@ -193,7 +196,9 @@ class VQA_predict(object):
             I = io.imread(os.path.join(data_folder, 'Images/val2014/') + imgFilename)
             plt.title(ques_id, fontdict=None, loc='center', pad=None)
 
-            plt.xlabel("Ground truth: " + str(ans_id) + " Pred: " + str(''.join(lbl.classes_[y_classes])))
+            plt.xlabel("Ground truth: " + str(ans_id) + " | Pred: " +
+                       str(''.join(lbl.classes_[y_classes])) + " | Prob: " +
+                       str(prediction[0][y_classes]))
             plt.imshow(I)
             fig1 = plt.gcf()
             plt.show()
