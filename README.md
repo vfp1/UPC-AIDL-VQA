@@ -174,3 +174,144 @@ With this change, model looks as :
 ![LSTM-VGG](images/model_LSTM-VGGb.png?raw=true "LSTM-VGG")
 
 ## MODEL COMPARISON
+
+## ISSUES
+
+### How did we built the images batch
+
+```python
+elif train_or_val == 'train':
+
+    for image_id in tqdm(img_coco_batch, total=len(img_coco_batch)):
+
+        imgFilename = 'COCO_' + 'train2014' + '_' + str(image_id).zfill(12) + '.jpg'
+
+        I = io.imread(os.path.join(data_path, 'Images/train2014/') + imgFilename)
+
+        # Resize images to fit in VGG matrix
+        # TODO: not optimal, find ways to pass whole image (padding)
+        image_resized = resize(I, (224, 224), anti_aliasing=True)
+
+        if standarization is True:
+
+            # Standarization for zero mean and unit variance
+            from matplotlib import pyplot as plt
+            scalers = {}
+
+            try:
+                # Loop through all the image channels
+                for i in range(image_resized.shape[2]):
+                    #Do scaling per channel
+                    scalers[i] = StandardScaler()
+                    image_resized[:, i, :] = scalers[i].fit_transform(image_resized[:, i, :])
+
+                image_matrix.append(image_resized)
+
+            # Some images have a fault in channels (grayscale perhaps)
+            # It gets IndexError: tuple index out of range so we pass this
+            except IndexError:
+                print("Probably a grayscale image:", image_id)
+
+                # Adding channel dimension to a grayscale image
+                stacked_img = np.stack((image_resized,)*3, axis=-1)
+
+                print("Shape of reshaped grayscale image:", stacked_img.shape)
+
+                # Loop through all the image channels
+                for i in range(stacked_img.shape[2]):
+                    # Do scaling per channel
+                    scalers[i] = StandardScaler()
+                    stacked_img[:, i, :] = scalers[i].fit_transform(stacked_img[:, i, :])
+
+                image_matrix.append(stacked_img)
+
+        elif standarization is False:
+
+            image_matrix.append(image_resized)
+
+    # Resizing the shape to have the channels first as keras demands
+    image_array = np.rollaxis(np.array(image_matrix), 3, 1)
+    return image_array
+```
+
+### Our custom Batch Generator
+
+```python
+
+class Custom_Batch_Generator(Sequence):
+    # Here we inherit the Sequence class from keras.utils
+    """
+    A custom Batch Generator to load the dataset from the HDD in
+    batches to memory
+    """
+
+    def __init__(self, questions, images, answers, batch_size, lstm_timestep,
+                 data_folder, nlp_load, lbl_load, tf_crop, img_standarization):
+        """
+        Here, we can feed parameters to our generator.
+        :param questions: the preprocessed questions
+        :param images: the preprocessed images
+        :param answers: the preprocessed answers
+        :param batch_size: the batch size
+        :param lstm_timestep: the timestep of the LSTM timestep = len(nlp(subset_questions[-1]))
+        :param data_folder: the data root folder (/aidl/VQA/data/, in Google Cloud
+        :param nlp_load: the nlp processing to be loaded from VQA_train
+        :param lbl_load: the lbl processing to be loaded from VQA_train
+        :param val_coco_id_file: the file for the coco id
+        """
+        self.questions = questions
+        self.images = images
+        self.answers = answers
+        self.batch_size = batch_size
+        self.lstm_timestep = lstm_timestep
+        self.data_folder = data_folder
+        self.nlp_load = nlp_load
+        self.lbl_load = lbl_load
+        self.tf_crop = tf_crop
+        self.img_standarization = img_standarization
+
+    def __len__(self):
+        """
+        This function computes the number of batches that this generator is supposed to produce.
+        So, we divide the number of total samples by the batch_size and return that value.
+        :return:
+        """
+        print("Batches per epoch:", (np.ceil(len(self.images) / float(self.batch_size))).astype(np.int))
+
+        return (np.ceil(len(self.images) / float(self.batch_size))).astype(np.int)
+
+    def __getitem__(self, idx):
+
+        """
+        Here, given the batch number idx you need to put together a list
+        that consists of data batch and the ground-truth (GT).
+
+        In our case, this is a tuple of [questions, images] and [answers]
+
+        In __getitem__(self, idx) function you can decide what happens to your dataset when loaded in batches.
+        Here, you can put your preprocessing steps as well.
+
+        :param idx: the batch id
+        :return:
+        """
+        batch_x_questions = self.questions[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_x_images = self.images[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        batch_y_answers = self.answers[idx * self.batch_size: (idx + 1) * self.batch_size]
+
+        print("Getting questions batch")
+        X_ques_batch_fit = get_questions_tensor_timeseries(batch_x_questions, self.nlp_load, self.lstm_timestep)
+
+        print("Getting images batch")
+        X_img_batch_fit = get_images_matrix_VGG(batch_x_images, self.data_folder,
+                                                train_or_val='train', standarization=self.img_standarization,
+                                                tf_pad_resize=self.tf_crop)
+
+        print("Get answers batch ")
+        Y_batch_fit = get_answers_matrix(batch_y_answers, self.lbl_load)
+
+        print(X_ques_batch_fit.shape, X_img_batch_fit.shape, Y_batch_fit.shape)
+
+        return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
+```

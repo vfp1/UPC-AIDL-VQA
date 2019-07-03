@@ -21,9 +21,9 @@ except:
 try:
 
     path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
-    time_and_uuid = "20190701-142414-_808fd7e5"
+    time_and_uuid = "20190702-223650-_a035d11a"
 
-    predict.VQA_predict().prediction(data_folder=path, time_and_uuid=time_and_uuid, subset_size=10, model_type=2)
+    predict.VQA_predict().prediction(data_folder=path, time_and_uuid=time_and_uuid, subset_size=5, model_type=2)
 
 except:
 
