@@ -11,9 +11,9 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
 # Adapting to Google Cloud imports
 try:
-    import src.train as train
+    import src.data_explore as data_explore
 except:
-    import train
+    import data_explore
 
 # Preprocess data
 
@@ -25,8 +25,8 @@ try:
 
     path = "G:/My Drive/Studies/UPC-AIDL/VQA/data/"
 
-    train.VQA_train().train(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=2,
-                            subset_size=10, subset=True, bsize=2, auto_steps_per_epoch=True, steps_per_epoch=10,
+    data_explore.VQA_explore().explore(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=2,
+                            subset_size=25000, subset=True, bsize=2, auto_steps_per_epoch=True, steps_per_epoch=10,
                             keras_loss='categorical_crossentropy',
                             keras_metrics='categorical_accuracy', learning_rate=1e-2,
                             optimizer='rmsprop', fine_tuned=True, test_size=0.20, vgg_frozen=4,
@@ -40,7 +40,7 @@ except:
 
     path = "/aidl/VQA/data/"
 
-    train.VQA_train().train(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=25,
+    data_explore.VQA_explore().explore(unique_id=unique_id, data_folder=path, model_type=2, num_epochs=25,
                             subset_size=25000, subset=True, bsize=10, auto_steps_per_epoch=True,steps_per_epoch=20,
                             keras_loss='categorical_crossentropy',
                             keras_metrics='categorical_accuracy', learning_rate=1e-4,
