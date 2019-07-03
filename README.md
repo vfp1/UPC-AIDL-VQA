@@ -3,6 +3,7 @@
 An attempt to address the VQA challenge for the Artificial Intelligence for Deep Learning postgraduate
 
 ## GROUP MEMBERS
+
 * Elena Alonso
 * David Valls
 * Hector Cano
@@ -10,6 +11,7 @@ An attempt to address the VQA challenge for the Artificial Intelligence for Deep
 * Francesc Guimera
 
 ## EXECUTION/TEST LOG
+
 Find the execution/test logs with comments at *report/experiments.xlsx*
 
 ## INTRODUCTION
@@ -18,7 +20,8 @@ Find the execution/test logs with comments at *report/experiments.xlsx*
 
 The Visual Question Answering (VQA) Challenge is a task in machine learning where given an image and a natural language question about the image, the trained system provides an accurate natural language answer to the question. The goal is to be able to understand the semantics of scenes well enough to be able to answer open-ended, free-form natural language questions (asked by humans) about images.
 
-The aim of the project developed at AIDL2019 IA with ML team is to design and build a model that is able to perform his task.
+The aim of the project developed at AIDL2019 IA with ML team is to design and build a model that is able to perform this task.
+To simplify the task we have opted to use the most freqüent answers aproach instead of generating a natural language answer.
 
 The VQA Challenge provides a train, validation and test sets, containing more than 250K images and 1.1M questions. The questions are annotated with 10 concise, open-ended answers each. Annotations on the training and validation sets are publicly available. This datasets will be used to trains and develop the model developed that is the target of this project.
 
@@ -26,29 +29,27 @@ The VQA Challenge provides a train, validation and test sets, containing more th
 
 The Visual Question Answering (VQA) problems require the model to understand a text-based question, identify elements of an image, and evaluate how these two inputs relate to one another. Much of the progress in VQA parallels developments made in other problems, such as image captioning and textual question answering.
 
-Several models in deep learning have been developed ton combine computer vision components with NLP components in order to solve the VQA Challenge.
+Several models in deep learning have been developed to combine computer vision components with NLP components in order to solve the VQA Challenge.
 
 These models fit a particular design paradigm, with modules for question encoding, image feature extraction, fusion of the two (that could be powered with attention mechanisms) to finish with a classification task over the space of answer(s).
 
 ### IA TOOLS TO APPROACH VQA
 
-The method to approach VQA tasks then is based on three subcomponents: 
+The method to approach VQA tasks then is based on three subcomponents:
 
 * Image Representations: creating representations for the image and question.
 * A Neural Network, to pass these representations through it, in order to create a co-dependent embedding;
 * Natural language answer generation by means of the use of a typical NLP processing path (tokenization and word-embedding)
 
-Finally both parts converge in one by concatenate it, and then the result is trained as an ensemble.
+Finally both parts converge in one by concatenation, and then the result is trained as an ensemble.
 
-## THE FIRST MODEL
-
-### DEVELOP ENVIRONMENT AND LIBS SUMMARY
+## DEVELOP ENVIRONMENT AND LIBS SUMMARY
 
 First, we will make a brief description of the environment used to develop, test and run the models.
 
-Two different kinds of environments has been used, on the idea to save the scarce computational resources on Google Cloud as much as possible for the with complete dataset model trains and final model tweaking.
+Two different kinds of environment have been used, on the idea to save the scarce computational resources on Google Cloud as much as possible for the complete dataset model trains and final model tweaking.
 
-The Develop tasks and first trail runs (few epochs just to see run ability and debug errors) of each model have been done on a laptop machine with Ubuntu 18.0 and TF/KERAS/PYTHON 3.0. TensorFlow was compiled for the use of the internal GPU NVIDIA provided on this Laptop.
+The Develop tasks and first train runs (few epochs just to see run ability and debug errors) of each model have been done on a laptop machine with Ubuntu 18.0 and TF/KERAS/PYTHON 3.0. TensorFlow was compiled for the use of the internal GPU NVIDIA provided on this Laptop.
 
 At the beginning, due to GPU’s memory problems the Dataset used was a reduced subset of the original ones only containing a small sample of each of VQA datasets, normally 10.000 images (the size of the batch images can be selected at model by means of a predefined variable). After find the `fit_generator` and  `batch_generator` solution full dataset model has been trained.
 
@@ -130,7 +131,7 @@ When doing this we should be aware to select a good one subset by taking a numbe
 
 By doing this the subset data should ensure to avoid selection bias. Selection bias occurs when the samples used to produce the model are not fully representative of cases that the model may be used for in the future, particularly with new and unseen data.
 
-After the subset is done We have to split it and use available data to perform the tasks of training, validation and testing where:
+After the subset is done we have to split it and use available data to perform the tasks of training, validation and testing where:
 
 * Training set: is a set used for learning and estimating parameters of the model.
 * Validation set: is a set used to evaluate the model, usually for model selection.
@@ -161,7 +162,7 @@ The first attempt to solve VQA and get something usable was a network composed b
 
 RESULTS (ACCURACY AND LOSS PLOTS)
 
-## BASIC MODEL ARCHITECTURE VARIATIONS.
+## BASIC MODEL ARCHITECTURE VARIATIONS
 
 ### MODEL LSTM+VGG
 
@@ -173,4 +174,3 @@ With this change, model looks as :
 ![LSTM-VGG](images/model_LSTM-VGGb.png?raw=true "LSTM-VGG")
 
 ## MODEL COMPARISON
-
