@@ -10,9 +10,9 @@ An attempt to address the **VQA challenge** for the *Artificial Intelligence for
 * Víctor Pajuelo
 * Francesc Guimerà
 
-## EXECUTION/TEST LOG
+## EXPERIMENTS
 
-Find the execution/test logs with comments at *[experiments.xlsx](report/experiments.xlsx)*
+Find the description of the tests and experiments, with parameters, graphs and comments at *[experiments.xlsx](report/experiments.xlsx)*
 
 ## INTRODUCTION
 
