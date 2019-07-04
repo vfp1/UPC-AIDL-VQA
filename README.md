@@ -12,7 +12,7 @@ An attempt to address the VQA challenge for the Artificial Intelligence for Deep
 
 ## EXECUTION/TEST LOG
 
-Find the execution/test logs with comments at *report/experiments.xlsx*
+Find the execution/test logs with comments at *[report/experiments.xlsx](experiments.xlsx)*
 
 ## INTRODUCTION
 
@@ -76,7 +76,7 @@ There is a list and short description of the use of each:
     * Pickle: the pickle lib. implements binary protocols for serializing (flattening) and de-serializing (de-flattening) a Python object structure.
     * GC: Generational garbage collector, to free memory from Python unused objects.
     * Os: The Os module provides a way of using operating system dependent functionalities.
-    * numpy: NumPy is the fundamental package for scientific computing with Python and can also be used as an efficient multi-dimensional container of generic data. 
+    * numpy: NumPy is the fundamental package for scientific computing with Python and can also be used as an efficient multi-dimensional container of generic data.
     * Pandas: Pandas is an open library providing data structures and data analysis tools for Python programming language.
     * Scipy: The SciPy library provides many numerical routines as for numerical integration, interpolation, optimization, linear algebra and statistics.
     * Src: used as a rood folder for all our function.
@@ -166,7 +166,7 @@ RESULTS (ACCURACY AND LOSS PLOTS)
 
 ### MODEL LSTM+VGG
 
-The first variation, as suggested by our team supervisor and logical first step is to change the FCC branch to do the images learning by a more appropriate and natural model of CNN, a VGG – 16 in this case. 
+The first variation, as suggested by our team supervisor and logical first step is to change the FCC branch to do the images learning by a more appropriate and natural model of CNN, a VGG – 16 in this case.
 
 With this change, model looks as :
 
