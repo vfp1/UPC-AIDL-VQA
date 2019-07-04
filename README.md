@@ -472,6 +472,10 @@ Each training run will output a folder with the date of run and an unique identi
   * param merged_activation: the activation function for the merged part
   * param finetuned_batchnorm: the batchnorm for the fine tuned part
   * param merged_batchnorm: the batchnorm for the merged part
+  
+Below you can find the experiment folder structure:
+![experiments](images/experiments.PNG?raw=true "LSTM-VGG")
+
 
 ### Predicting
 
