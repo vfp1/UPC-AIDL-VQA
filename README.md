@@ -133,6 +133,10 @@ After the subset is done we have to split it and use available data to perform t
 
 Finally the used subset is of 25.000 Images (with Ground Truth and text Labels) for Train (80%) and Validation (20%) sets.
 
+Below is shown the answers (Y) appeareances for our random subset. Notice how _yes_ has more than 5000 appearances. While _mt airy_ only one. 
+Oversampling would have been extremely useful here for balancing the training. 
+
+![LSTM-VGG](images/subset.png?raw=true "LSTM-VGG")
 ## NETWORK MODEL
 
 ### FIRST MODEL PROPOSAL
