@@ -411,6 +411,57 @@ Edit `upc-vqa/training.py` to define your training parameters.
 
 Run `upc-vqa/training.py` to train.
 
+You need to set the `PYTHONHASHSEED` variable to 42, so that all the subsets from VQA and the train/validation splits are consistent across the experiments.
+
 ``` python
-python upc-vqa/training.py
+$ PYTHONHASHSEED=42 python upc-vqa/training.py
+```
+
+### Experiment setting
+Each training run will output a folder with the date of run and an unique identifier. Whithin each folder you will find:
+
+* Training/Validation Loss & Accuracy charts
+* Tensorboard logs
+* Model parameters.json to be loaded after in predict/evaluation
+* Model weights.hdf5 to be loaded after in predict/evaluation
+* A CSV with all the parameters of the training being:
+   * param unique_id: the unique id for the experiment
+   * param data_folder: the root data folder
+   * param model_type: 1, MLP, LSTM; 2, VGG, LSTM
+   * param num_epochs: the number of epochs
+   * param subset_size: the subset size of VQA dataset, recommended 25000 by default
+   * param subset: whether to subset the dataset or not
+   * param bsize: the batch size, default at 256
+   * prarm auto_steps_per_epoch: automated steps per epoch counter to adjust number samples/number batch
+   * param steps_per_epoch: the steps for each epoch
+   * param keras_loss: the chosen keras loss
+   * param keras_metrics: the chosen keras metrics
+   * param learning_rate: the chosen learning rate
+   * param optimizer: the chosen optimizer
+   * param fine_tuned: whether to fine tune VGG or not
+   * param test_size: the split test size, set to 80/20
+   * param vgg_frozen: the number of frozen layers
+   * param lstm_hidden_nodes: the LSTM hidden nodes, set to 512
+   * param lstm_num_layers: the number of chosen LSTM layers
+   * param fc_hidden_nodes: the number of FC hidden nodes after model merges, set to 1024
+   * param fc_num_layers: the number of FC layers (DENSE)
+   * param merge_method: the chosen merge method, either concatenate or dot
+   * param tf_crop_bool: True/False cropping the images with tensorflow (True) or scikit image (False)
+   * param image_standarization: whether to do image scaling for zero mean and unit variance
+   * param vgg_finetuned_dropout: the dropout for the fine tuned VGG
+   * param vgg_finetuned_activation: the activation for the fine tuned VGG
+   * param merged_dropout_num: the dropout for the merged part
+   * param merged_activation: the activation function for the merged part
+   * param finetuned_batchnorm: the batchnorm for the fine tuned part
+   * param merged_batchnorm: the batchnorm for the merged part
+
+
+### Predicting
+
+Edit `upc-vqa/predicting.py` to assign how many images you want to predict on. You need to specify the folder with the results.
+
+Run `upc-vqa/predicting.py` to train.
+
+``` python
+python upc-vqa/predicting.py
 ```
