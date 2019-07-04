@@ -303,8 +303,8 @@ class Custom_Batch_Generator(Sequence):
 
 ## ISSUES
 
-* **Resize Images**: We had  to resize images form original size to 224x244 to feed them into the input layer of the VGG.
-  We found some problems around it due to the fact that some imges are portrait oriented and others are landscape.
+* **Resize Images**: We had  to resize images form original size to 224x224 to feed them into the input layer of the VGG.
+  We found some problems around it due to the fact that some images are portrait oriented and others are landscape.
 
 * **Size of the dataset** (`fit--> fit_generator+batch_generator`): Due to recurrent overflows of memory at GPU we start to look for ways to work with smaller datasets.
   Then we found the solution by means of creating a `batch-generator` and changin the `model.fit` for `model.fit_generator`.
