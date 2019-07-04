@@ -6,9 +6,9 @@ An attempt to address the VQA challenge for the Artificial Intelligence for Deep
 
 * Elena Alonso
 * David Valls
-* Hector Cano
-* Victor Pajuelo
-* Francesc Guimera
+* Héctor Cano
+* Víctor Pajuelo
+* Francesc Guimerà
 
 ## EXECUTION/TEST LOG
 
@@ -16,7 +16,7 @@ Find the execution/test logs with comments at *[experiments.xlsx](report/experim
 
 ## INTRODUCTION
 
-### VQA CHALLENGE- definición
+### VQA CHALLENGE* definition
 
 The Visual Question Answering (VQA) Challenge is a task in machine learning where given an image and a natural language question about the image, the trained system provides an accurate natural language answer to the question. The goal is to be able to understand the semantics of scenes well enough to be able to answer open-ended, free-form natural language questions (asked by humans) about images.
 
@@ -111,7 +111,7 @@ Once the draft of the first model is done, both by looking at VQA paper as well 
 
 To introduce the images on our first model based on FCC input layer, We do unroll the images by using the `layer.flatten` Keras tool.
 
-*VGG* - This problem was fixed when after debugging all the process (something that was difficult because it worked with a small dataset well but suddenly give us an error when try was done using more images
+*VGG* * This problem was fixed when after debugging all the process (something that was difficult because it worked with a small dataset well but suddenly give us an error when try was done using more images
 
 ### REPRESENTATIVE SUBSET AND BIASED OR WRONG SUBSET SELECTION
 
@@ -175,7 +175,7 @@ With this change, model looks as :
 
 ## MODEL COMPARISON
 
-## ISSUES
+## DEVELOPMENT
 
 ### How did we built the images batch
 
@@ -315,3 +315,67 @@ class Custom_Batch_Generator(Sequence):
 
         return [X_ques_batch_fit, X_img_batch_fit], Y_batch_fit
 ```
+
+## ISSUES
+
+* **Resize Images**: We had  to resize images form original size to 224x244 to feed them into the input layer of the VGG.
+  We found some problems around it due to the fact that some imges are portrait oriented and others are landscape.
+
+* **Size of the dataset** (`fit--> fit_generator+batch_generator`): Due to recurrent overflows of memory at GPU we start to look for ways to work with smaller datasets.
+  Then we found the solution by means of creating a `batch-generator` and changin the `model.fit` for `model.fit_generator`.
+
+  *This solution was provided by **Mr. Chollet** in a Keras forum at Stackoverflow!!!*
+
+* **Grayscale images**: Due to the fact the we didn't know the dataset very well, We could not foresee that there are some grayscale images.
+   These images of only one channel, by entering the VGG (that was expecting a 3 channel RGB image), broke the program and make stop the tranining in progress.
+
+* **Crop from Tensorflow**: We tried to use Tensorflow's Crop instead of the resize, to mantain aspect ratio but we were not able.
+
+  Memory starts to get leaked with the prior epochs data and finally the epochs were much more slower and stopped, completely freezing the computer.
+  We have not been able to found were the error with crop lies.
+
+* **Non representative dataset (due to code errors in Python)**: biased answers.
+
+  * When started to make inferences, all the system was able to give us was a very small set of so much space of answers ("1", "Mt. Airy", "Yes").
+  * Then after running several trainings without realizing of the problem, but changing parameters trying to make it better and more capable to answer more things we started to be suspicious that our problem was that we were training over a small ann non representative set of samples.
+  *  The problem was that we were taking the lenght of a list as a value to iterate, but where it was supossed to be a index list, we where taking the length of a string. Due to this we were iterating only over the first positions of the dataset, and the model was learning only a few things.
+
+* **Steps_per_epoch**: Other isue that we have fixed at the end was that the Keras parameter steps_per_epoch was limiting the number of items of the datased percoursed in trainings to 1000 samples. After we realized that epochs were running too fast, we found that the relation between batch_size and steps_epochs was the responsible.
+  * The right number for the steps is `np.ceil(subset/batchsize)`.
+
+* **After we fixed both last errors, the prediction has become much better (not the curves!).**
+
+* **Repetibility of tests**: to guarantee the repetibility of tests, we have used `PYTHONHASHSEED` to get the same *random* items in each run.
+
+* **Terminal connection lost**: When a terminal connection is lost any pogram being executed from that terminal is lost. This can be frustrating in programs that take very long to execute, as the trainings. We have used `nohup`and `screen` to avoid this problem.
+
+## NEXT STEPS
+
+* **First**: try to make a very representative subset and do same trains in order to see if we can get better inference answers with the same parameters as we did the tests.
+
+* **Second**: Try to make oversampling with the less represented values of the dataset.
+
+* **Third**: Change the model and try some more advanced architectures like *Bi-Lstm*, add *atention* mechanisms and maybe some advance NLP techniques like *transformers*.
+
+* **Fourth**: We would like to have much more time in order to develop a production model running on some kind of portable platform, and try it out there.
+
+## CONCLUSIONS
+
+Our conclusions are more related about how the time should be dsitributed when planning a machine learning project.
+
+1. Assuming you have datasets available for your purpose, we have spent 2/3 of the available time preparing the data ingestion  and trying to make the model able to deal with the provided prepared data and to run.
+
+    Thinking of more experienced and with better ML skills people doing that we can suposse that at half of the time could be spent doing this, specially if you have to look for your own data.
+
+2. We spent much less time tweaking the model that we thought due mainly to the reason above, and also the time lost on bad trainings (the memory overflows etc..).
+
+    Having better comprension of the behaviour of Keras functions would have save us a lot of processing time.
+    In this case, this consuming time cost money, so better save running machine time.
+
+3. It's also difficult to understand the results sometime. To be rigourous when annotating the parameters of each train has been useful when analysing the results and compare them.
+
+4. Also we have get good results by using pretrained model on VGG part. So work more on your dataset and take advantage of the models that had been already trained for you.
+
+5. The fun part of the project was to play with the model when was running, but hard work has to be done in order to get into this.
+
+**The main conclusion could be...take care of your datasets!!!**
