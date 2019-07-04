@@ -12,7 +12,7 @@ An attempt to address the VQA challenge for the Artificial Intelligence for Deep
 
 ## EXECUTION/TEST LOG
 
-Find the execution/test logs with comments at *[report/experiments.xlsx](experiments.xlsx)*
+Find the execution/test logs with comments at *[experiments.xlsx](report/experiments.xlsx)*
 
 ## INTRODUCTION
 
