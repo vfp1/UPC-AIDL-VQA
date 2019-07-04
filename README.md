@@ -164,6 +164,17 @@ With this change, model looks as :
 ![LSTM-VGG](images/model_LSTM-VGG.png?raw=true "LSTM-VGG")
 ![LSTM-VGG](images/model_LSTM-VGGb.png?raw=true "LSTM-VGG")
 
+The final model used in the latest experiments consisted on the VGG16 with frozen layers (up to 13 of them) followed
+by a flattening and fully connected operations, using batch normalization after the activations. The output size was (1, 4096).
+We played with the merge, but concatenation was the best solution. The language part was treated through three LSTMS with input sizes
+equal to the questions input vector, i.e. (1, 96). The hidden units from the LSTM are 512 and the output from the whole LSTM stack is 512. 
+The concatenation sets the tensor to (1, 4608). Then it passes through a series of fully connected, with dropout regularization
+and batch normalization, ending up with a layer of (1, 1000) according to the lenght of potential answers, and a softmax layer for classification.
+
+![LSTM-VGG](images/VGG_LSTM_a035d11a.png?raw=true "LSTM-VGG")
+
+
+
 ## DEVELOPMENT
 
 ### How did we built the images batch
