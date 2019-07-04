@@ -361,6 +361,12 @@ class Custom_Batch_Generator(Sequence):
 
 * **Portable production model**: We would like to have much more time in order to develop a production model running on some kind of portable platform, and try it out there.
 
+* [**Soft cross-entropy loss**](https://arxiv.org/pdf/1708.00584.pdf): "contrary to conventional classification problems, 
+the VQA evaluation metric considers a predicted answer as correct if the answer was given by at least three
+out of ten human annotators. The accuracy is then averaged over all subsets of ground-truth answers. As a result, the model’s performance is not properly assessed with the cross entropy loss function during the training phase. The improper loss function has significant negative impact on the model’s training and delays the convergence. Furthermore, it results in abnormal and counterintuitive validation loss – accuracy relationship where both
+the loss and the accuracy increase. As a solution, we propose to use a loss function that considers all ground-truth answers. The proposed loss function,
+termed as soft cross entropy, is a simple weighted average of each unique ground-truth answers.
+
 ## CONCLUSIONS
 
 Our conclusions are more related about how the time should be dsitributed when planning a machine learning project.
