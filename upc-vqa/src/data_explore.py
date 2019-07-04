@@ -327,6 +327,8 @@ class VQA_explore(object):
         print(xticks)
 
         fig, ax = plt.subplots(1,1)
+        ax = plt.gca()
+        ax.tick_params(axis='both', which='major', labelsize=16)
         ax.hist(subset_answers, bins=1000, histtype='step')
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticks)
