@@ -321,11 +321,15 @@ class VQA_explore(object):
         # -------------------------------------------------------------------------------------------------
         # DECIDE MODEL TYPE: MPL_LSTM or VGG_LSTM
 
-        plt.title("La distribucion", fontdict=None, loc='center', pad=None)
-        plt.hist(subset_answers, bins=100, histtype='step')
+        xticks = [np.unique(subset_answers)[i] for i in range(0, len(np.unique(subset_answers)), 50)]
+        xticks = ['yes', 'mt airy', '19', 'adidas', 'bear', 'branch', 'ducks', 'fork and knife', 'keyboard', 'medium', 'old', 'pasta', 'propeller', 'sad', 'slow', 'suit', 'top left', 'water skiing']
+
+        print(xticks)
+
+        fig, ax = plt.subplots(1,1)
+        ax.hist(subset_answers, bins=1000, histtype='step')
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticks)
         plt.xticks(rotation=90)
+        plt.tight_layout()
         plt.show()
-
-
-
-
