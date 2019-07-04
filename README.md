@@ -364,3 +364,53 @@ Our conclusions are more related about how the time should be dsitributed when p
 5. The fun part of the project was to play with the model when was running, but hard work has to be done in order to get into this.
 
 > **The main conclusion could be...take care of your datasets!!!**
+
+## HOW TO RUN THIS REPO
+
+### English model from Spacy
+
+```python
+python -m spacy download en
+```
+
+### VQA helpers
+
+This installs the helpers for _ingestion_ and _evaluation_ of the VQA Challenge. This is based on the
+[this repository](https://github.com/vfp1/VQA).
+
+``` python
+python -m pip install installers/helpers/dist/vqaHelpers-0.4_faster_unzip_capabilities-py3-none-any.whl
+```
+
+### Requirements
+
+``` python
+pip install -r requirements.txt
+```
+
+### Preparing the datasets
+
+The datasets are used as in the [VQA Challenge](https://visualqa.org/download.html).
+
+The datasets must be downloaded and unzipped.
+
+Edit `upc-vqa/data_preparation.py` to update the `path_data` to point to your data path.
+That script can be also used to download and unzip the data.
+Beware, it takes time and a lot of disk space.
+It is **30GB** after all.
+
+Run `upc-vqa/data_preparation.py` to prepare the data.
+
+``` python
+python upc-vqa/data_preparation.py
+```
+
+### Training
+
+Edit `upc-vqa/training.py` to define your training parameters.
+
+Run `upc-vqa/training.py` to train.
+
+``` python
+python upc-vqa/training.py
+```
